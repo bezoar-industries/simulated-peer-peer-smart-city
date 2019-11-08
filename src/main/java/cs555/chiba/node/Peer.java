@@ -81,11 +81,13 @@ public class Peer implements Node {
             numberOfIoTDevices = random.nextInt(27) + 3;
         }
 
+        System.out.println("number of devices: " + numberOfIoTDevices);
+
         // Add devices to our array list
         for(int i = 0; i < numberOfIoTDevices; i++) {
 
             // Change this int when adding a new IoT device
-            int numberOfPossibleIotDevices = 4;
+            int numberOfPossibleIotDevices = 17;
             Random random = new Random();
             int possibleDevicesRandomIndex = random.nextInt(numberOfPossibleIotDevices);
             switch(possibleDevicesRandomIndex){
@@ -101,9 +103,49 @@ public class Peer implements Node {
                 case 3 :
                     this.connectedIotDevices.add(new Outlet());
                     break;
+                case 4 :
+                    this.connectedIotDevices.add(new AirPollutionMonitor());
+                    break;
+                case 5 :
+                    this.connectedIotDevices.add(new AirVent());
+                    break;
+                case 6 :
+                    this.connectedIotDevices.add(new DoorSensor());
+                    break;
+                case 7 :
+                    this.connectedIotDevices.add(new Dryer());
+                    break;
+                case 8 :
+                    this.connectedIotDevices.add(new LightSwitch());
+                    break;
+                case 9 :
+                    this.connectedIotDevices.add(new Microwave());
+                    break;
+                case 10 :
+                    this.connectedIotDevices.add(new Refrigerator());
+                    break;
+                case 11 :
+                    this.connectedIotDevices.add(new TV());
+                    break;
+                case 12 :
+                    this.connectedIotDevices.add(new WashMachine());
+                    break;
+                case 13 :
+                    this.connectedIotDevices.add(new Watch());
+                    break;
+                case 14 :
+                    this.connectedIotDevices.add(new WaterLeakSensor());
+                    break;
+                case 15 :
+                    this.connectedIotDevices.add(new WindowSensor());
+                    break;
+                case 16 :
+                    this.connectedIotDevices.add(new Clock());
+                    break;
             }
         }
         System.out.println(this.connectedIotDevices);
+        System.out.println("Number of actual devices: " + this.connectedIotDevices.size());
     }
 
     /**
