@@ -1,2 +1,6 @@
 assignments/
 build/
+.gradle/
+out/
+.idea/
+*.iml
