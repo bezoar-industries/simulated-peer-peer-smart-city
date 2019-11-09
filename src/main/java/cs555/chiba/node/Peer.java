@@ -13,15 +13,19 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.UUID;
 
 import cs555.chiba.transport.TCPConnectionsCache;
 import cs555.chiba.transport.TCPRecieverThread;
 import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
+import cs555.chiba.util.LRUCache;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
 import cs555.chiba.wireformats.SampleMessage;
+import cs555.chiba.wireformats.Flood;
+import cs555.chiba.wireformats.RandomWalk;
 
 public class Peer implements Node {
 	private Thread icp;
@@ -31,14 +35,16 @@ public class Peer implements Node {
     private int myPort;
     private InetAddress myAddr;
     private Thread serverThread;
-    private int id;
+    private UUID id;
+    private LRUCache queryIDCache;
 
-	public Peer(InetAddress registryHost, int registryPort, int id){
+	public Peer(InetAddress registryHost, int registryPort){
 		//Set-up activities - get the event factory, create the ICP
-		this.id = id;
+		this.id = UUID.randomUUID();
         this.eventFactory = EventFactory.getInstance(this);
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
+        queryIDCache = new LRUCache(1000);
 
         try {
             //Connect to registry and start thread
@@ -59,8 +65,8 @@ public class Peer implements Node {
         this.serverThread = new Thread(server);
         serverThread.start();
         
-        byte[] m = new SampleMessage(id).getBytes();
-        //Send registration
+        byte[] m = new SampleMessage(0).getBytes();
+        //Send to registry
         connections.send(m); 
     }
     
@@ -91,12 +97,55 @@ public class Peer implements Node {
     }
     
     /**
+     * A handler for Flood messages
+     * @param e The Flood message
+     */
+    public void Flood(Flood e){
+    	if(queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - ignore it
+    		queryIDCache.putEntry(e.getID(), -1);
+    		return;
+    	}
+    	
+        System.out.println("Recieved flood message with ID: "+e.getID());
+        queryIDCache.putEntry(e.getID(), -1);
+        //Check if queried data is here - if so, log appropriately
+        
+        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	connections.sendAll(m, e.getSenderID());
+        }
+    }
+    
+    /**
+     * A handler for RandomWalk messages
+     * @param e The RandomWalk message
+     */
+    public void RandomWalk(RandomWalk e) {
+    	if(!queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - don't process it again (but still forward it)
+    		System.out.println("Recieved random walk message with ID: "+e.getID());
+    		//Check if queried data is here - if so, log appropriately
+    	}
+    	queryIDCache.putEntry(e.getID(), -1);
+       
+        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	connections.sendToRandom(m, e.getSenderID());
+        }
+    }
+    
+    /**
      * Routes messages to the correct handler
      * @param e The message that must be handled
      */
     @Override
     public void onEvent(Event e){
         if (e instanceof SampleMessage){ SampleMessage((SampleMessage)e); }
+        else if (e instanceof Flood){ Flood((Flood)e); }
+        else if (e instanceof RandomWalk){ RandomWalk((RandomWalk)e); }
     }
     
     /**
@@ -108,11 +157,11 @@ public class Peer implements Node {
 	
     /**
      * Creates a new Peer, then idles until exit
-     * @param args The IP address of the registry, the port of the registry, and this Peer's ID
+     * @param args The IP address of the registry and the port of the registry
      */
 	public static void main(String[] args) {
 		try {
-			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]));
 		} catch (UnknownHostException e){
 			System.out.println("Peer.main() " + e);
 		}

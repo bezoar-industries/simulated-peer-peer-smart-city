@@ -12,4 +12,6 @@ package cs555.chiba.wireformats;
 
 class Protocol {
     public static final int SAMPLE_MESSAGE = 1;
+    public static final int FLOOD = 2;
+    public static final int RANDOM_WALK = 2;
 }
