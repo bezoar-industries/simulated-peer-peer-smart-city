@@ -1,5 +1,7 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.util.Utilities;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -18,31 +21,51 @@ import java.util.stream.Collectors;
  * of connections is on all nodes.  Note: This approach can fail.  It's possible to create a graph where all but one node has the right number
  * of connections.  When this happens, it discards the created map and tries again.  The graphs are so small it doesn't take very long to 
  * randomly discover a working graph.
- * 
- * When building a map for a MessagingNode, the edges are supplied by the LinkWeights message.  It builds the map back up according to
- * the instructions provided by the list of Edges.
+ *
  */
 public class NetworkMap {
 
-   private List<Vertex> vertices = new ArrayList<Vertex>(); // The graph vertex.  Order matters because we only want to connect two vertices once.
-   private int numConnections; // the number of edges a single vertex needs to have
+   private static final Logger logger = Logger.getLogger(NetworkMap.class.getName());
 
-   public NetworkMap(List<Identity> registeredNodes, int numConnections) {
-      this.numConnections = numConnections;
+   private List<Vertex> vertices = new ArrayList<Vertex>(); // The graph vertex.  Order matters because we only want to connect two vertices once.
+   private int minConnections; // min number of edges a single vertex needs to have
+   private int maxConnections; // max number of edges a single vertex needs to have
+
+   public NetworkMap(List<Identity> registeredNodes, int minConnections, int maxConnections) {
+      this.minConnections = minConnections;
+      this.maxConnections = maxConnections;
       verifyNumConnections(registeredNodes); // insure the graph is possible
-      fillConnections(registeredNodes, numConnections); // randomly create graphs until we get a good one
+      fillConnections(registeredNodes); // randomly create graphs until we get a good one
       verify(); // make sure we did it right
    }
 
-   public NetworkMap(int numConnections, List<Edge> edges) {
-      this.numConnections = numConnections;
+   public NetworkMap(int minConnections, int maxConnections, List<Edge> edges) {
+      this.minConnections = minConnections;
+      this.maxConnections = maxConnections;
       addVertices(edges);
-      edges.stream().forEach(this::addEdge);
+      edges.forEach(this::addEdge);
       verify(); // make sure we did it right
+   }
+
+   public NetworkMap(int numOfVertices, int minConnections, int maxConnections) {
+      this.minConnections = minConnections;
+      this.maxConnections = maxConnections;
+      List<Identity> registeredNodes = generateNodes(numOfVertices);
+      verifyNumConnections(registeredNodes); // insure the graph is possible
+      fillConnections(registeredNodes); // randomly create graphs until we get a good one
+      verify(); // make sure we did it right
+   }
+
+   private List<Identity> generateNodes(int numOfVertices) {
+      List<Identity> rtn = new ArrayList<>();
+      for (int i = 1025; i < 1025 + numOfVertices; i++) {
+         rtn.add(Identity.builder().withHost("vertex").withPort(i).build());
+      }
+      return rtn;
    }
 
    /**
-    *  Return the list of nodes that the given identity should initiate connections to.  This is importat to ensure only 
+    *  Return the list of nodes that the given identity should initiate connections to.  This is important to ensure only
     *  one connection is created between two nodes.
     */
    public List<Identity> getConnectionList(Identity node) {
@@ -58,12 +81,20 @@ public class NetworkMap {
       return this.vertices.stream().map(Vertex::generateEdges).collect(Collectors.toList()).stream().flatMap(List::stream).collect(Collectors.toList());
    }
 
-   public int getNumConnections() {
-      return this.numConnections;
-   }
-
    public Map<Vertex, Integer> getNeighbors(Identity identity) {
       return findVertex(identity).getEdges();
+   }
+
+   public List<Vertex> getVertices() {
+      return Utilities.copy(vertices);
+   }
+
+   public int getMaxConnections() {
+      return maxConnections;
+   }
+
+   public int getMinConnections() {
+      return minConnections;
    }
 
    /**
@@ -95,7 +126,7 @@ public class NetworkMap {
 
    // defensive programming for the win! Just make sure our network is setup correctly
    private void verify() {
-      if (this.vertices.stream().anyMatch(v -> v.getEdges().size() != this.numConnections)) {
+      if (this.vertices.stream().anyMatch(v -> v.getEdges().size() < this.minConnections || v.getEdges().size() > this.maxConnections)) {
          throw new IllegalStateException("Not all the vertices are properly connected [" + this.vertices + "]");
       }
    }
@@ -104,37 +135,41 @@ public class NetworkMap {
     * Since we're doing this randomly, let's make sure it is possible before we start looping.
     */
    private void verifyNumConnections(List<Identity> registeredNodes) {
-      if (this.numConnections < 1) {
-         throw new IllegalArgumentException("The number of overlay connections [" + this.numConnections + "] must be greater than 0.");
+      if (this.minConnections < 1) {
+         throw new IllegalArgumentException("The number of overlay connections [" + this.minConnections + "] must be greater than 0.");
       }
 
-      if (this.numConnections == 1 && registeredNodes.size() != 2) {
+      if (this.maxConnections == 1 && registeredNodes.size() != 2) {
          throw new IllegalArgumentException("The number of connections can only be 1 if there are only two registered nodes.  There are [" + registeredNodes.size() + "].");
       }
 
-      if (this.numConnections >= registeredNodes.size()) {
-         throw new IllegalArgumentException("The number of overlay connections [" + this.numConnections + "] must be less than the number of registered nodes [" + registeredNodes.size() + "].");
+      if (this.maxConnections >= registeredNodes.size()) {
+         throw new IllegalArgumentException("The number of overlay connections [" + this.maxConnections + "] must be less than the number of registered nodes [" + registeredNodes.size() + "].");
       }
 
-      if ((this.numConnections * registeredNodes.size()) % 2 == 1) {
-         throw new IllegalArgumentException("The number of overlay connections [" + this.numConnections + "] times the number of registered nodes [" + registeredNodes.size() + "] must be even.");
+      if (this.maxConnections < this.minConnections) {
+         throw new IllegalArgumentException("The minimum number of overlay connections [" + this.minConnections + "] cannot be greater than the  [" + this.maxConnections + "]");
+      }
+
+      if ((this.minConnections * registeredNodes.size()) % 2 == 1) {
+         throw new IllegalArgumentException("The min number of overlay connections [" + this.minConnections + "] times the number of registered nodes [" + registeredNodes.size() + "] must be even.");
       }
    }
 
    /**
     * Randomly complete the map.  If verify says it's a broken map, throw it away and try again.
     */
-   private void fillConnections(List<Identity> registeredNodes, int numConnections) {
+   private void fillConnections(List<Identity> registeredNodes) {
       boolean success = false;
       while (!success) {
          try {
-            intializeLoop(registeredNodes); // connect all the vertices to ensure no partitions.
-            attemptToFillConnections(numConnections); // attempt to create the graph randomly
+            initializeLoop(registeredNodes); // connect all the vertices to ensure no partitions.
+            attemptToFillConnections(); // attempt to create the graph randomly
             verify(); // check for correctness
             success = true;
          }
          catch (IllegalStateException e) {
-            this.vertices = new ArrayList<Vertex>(); // we failed, clear and try again
+            this.vertices = new ArrayList<>(); // we failed, clear and try again
          }
       }
    }
@@ -142,22 +177,22 @@ public class NetworkMap {
    /**
     * For each vertex, randomly connect to another vertex.
     */
-   private void attemptToFillConnections(int numConnections) {
+   private void attemptToFillConnections() {
       for (Vertex vertex : this.vertices) {
-         randomlyConnect(vertex, numConnections);
+         randomlyConnect(vertex);
       }
    }
 
    /**
-    * Pick random vertices and try to connect to them.  Don't connect to myself, something I'm already connected to, and something that has fewer
-    * than the required number of connections.
+    * Pick random vertices and try to connect to them.  Don't connect to myself, something I'm already
+    * connected to, and something that already has the max connections
     */
-   private void randomlyConnect(Vertex vertex, int numConnections) {
+   private void randomlyConnect(Vertex vertex) {
       // Attempt to randomly connect the graph.  This is not always possible, so we'll try a few times.
-      for (int count = 0; !vertexCompleted(vertex, numConnections, count); count++) {
+      for (int count = 0; !vertexCompleted(vertex, this.minConnections, count); count++) {
          Vertex edge = getRandomVertex(vertex.getName());
 
-         if (!vertex.equals(edge) && edge.getEdges().size() < numConnections && !vertex.isConnected(edge)) {
+         if (!vertex.equals(edge) && edge.getEdges().size() < this.maxConnections && !vertex.isConnected(edge)) {
             vertex.addEdge(edge, generateCost());
          }
       }
@@ -175,7 +210,7 @@ public class NetworkMap {
          return true;
       }
 
-      if (count >= numConnections * this.vertices.size()) {
+      if (count >= numConnections * 10) {
          return true;
       }
 
@@ -187,7 +222,7 @@ public class NetworkMap {
     * and connect them in a loop.  You can now reach any node from any other.  The rest of the connections
     * will be filled randomly.
     */
-   private void intializeLoop(List<Identity> nodes) {
+   private void initializeLoop(List<Identity> nodes) {
       Vertex prev = null;
       for (int i = 0; i < nodes.size(); i++) {
          Vertex vertex = new Vertex(i, nodes.get(i));
@@ -212,16 +247,14 @@ public class NetworkMap {
       return ThreadLocalRandom.current().nextInt(1, 11);
    }
 
-   @Override
-   public int hashCode() {
+   @Override public int hashCode() {
       final int prime = 31;
       int result = 1;
       result = prime * result + ((vertices == null) ? 0 : vertices.hashCode());
       return result;
    }
 
-   @Override
-   public boolean equals(Object obj) {
+   @Override public boolean equals(Object obj) {
       if (this == obj)
          return true;
       if (obj == null)
@@ -230,16 +263,13 @@ public class NetworkMap {
          return false;
       NetworkMap other = (NetworkMap) obj;
       if (vertices == null) {
-         if (other.vertices != null)
-            return false;
+         return other.vertices == null;
       }
-      else if (!vertices.equals(other.vertices))
-         return false;
-      return true;
+      else
+         return vertices.equals(other.vertices);
    }
 
-   @Override
-   public String toString() {
+   @Override public String toString() {
       return "NetworkMap [vertices=" + vertices + "]";
    }
 
@@ -256,4 +286,7 @@ public class NetworkMap {
       return rtn;
    }
 
+   public int size() {
+      return this.vertices.size();
+   }
 }
