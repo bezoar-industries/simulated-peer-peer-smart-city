@@ -2,6 +2,9 @@ package cs555.chiba.overlay.network;
 
 import cs555.chiba.util.Utilities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author mmuller
  *
@@ -31,8 +34,7 @@ public class Edge {
       return this.cost;
    }
 
-   @Override
-   public int hashCode() {
+   @Override public int hashCode() {
       final int prime = 31;
       int result = 1;
       result = prime * result + ((cost == null) ? 0 : cost.hashCode());
@@ -41,8 +43,7 @@ public class Edge {
       return result;
    }
 
-   @Override
-   public boolean equals(Object obj) {
+   @Override public boolean equals(Object obj) {
       if (this == obj)
          return true;
       if (obj == null)
@@ -71,8 +72,7 @@ public class Edge {
       return true;
    }
 
-   @Override
-   public String toString() {
+   @Override public String toString() {
       return "Edge [first=" + first + ", second=" + second + ", cost=" + cost + "]";
    }
 
@@ -81,6 +81,29 @@ public class Edge {
       path += " " + this.getSecond().getName().getIdentityKey();
       path += " " + this.getCost();
       return path;
+   }
+
+   public String toCsv() {
+      List<String> columns = new ArrayList<>();
+      columns.add(Integer.toString(this.getFirst().getId()));
+      columns.add(this.getFirst().getName().getIdentityKey());
+      columns.add(Integer.toString(this.getSecond().getId()));
+      columns.add(this.getSecond().getName().getIdentityKey());
+      columns.add(this.getCost().toString());
+
+      return String.join(",", columns);
+   }
+
+   public static Edge fromCsv(String[] columns) {
+      Integer firstId = Integer.parseInt(columns[0]);
+      Identity firstIdent = Identity.builder().withIdentityKey(columns[1]).build();
+      Integer secondId = Integer.parseInt(columns[2]);
+      Identity secondIdent = Identity.builder().withIdentityKey(columns[3]).build();
+      Integer cost = Integer.parseInt(columns[4]);
+
+      Vertex first = new Vertex(firstId, firstIdent);
+      Vertex second = new Vertex(secondId, secondIdent);
+      return Edge.builder().withFirst(first).withSecond(second).withCost(cost).build();
    }
 
    public static Builder builder() {

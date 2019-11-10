@@ -1,57 +1,107 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.util.Utilities;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestNetworkMap {
 
-   @Test(expected = IllegalArgumentException.class)
-   public void testNetworkMapCreation() {
+   private static final Logger logger = Logger.getLogger(TestNetworkMap.class.getName());
+
+   @Test(expected = IllegalArgumentException.class) public void testNetworkMapCreation() {
       List<Identity> nodes = createRegisteredNodes();
       nodes.add(createIdentity("nowhere"));
 
-      NetworkMap net = new NetworkMap(nodes, 1);
+      NetworkMap net = new NetworkMap(nodes, 1, 1);
    }
 
-   @Test(expected = IllegalArgumentException.class)
-   public void testNetworkMapOddNumberCreation() {
-      NetworkMap net = new NetworkMap(createRegisteredNodes(), 3);
+   @Test(expected = IllegalArgumentException.class) public void testNetworkMapOddNumberCreation() {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 3, 3);
    }
 
-   @Test(expected = IllegalArgumentException.class)
-   public void testNetworkMapMaxCreation() {
-      NetworkMap net = new NetworkMap(createRegisteredNodes(), 9);
+   @Test(expected = IllegalArgumentException.class) public void testNetworkMapMaxCreation() {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 9, 9);
    }
 
-   @Test(expected = IllegalArgumentException.class)
-   public void testNetworkMapMoreThanMaxCreation() {
-      NetworkMap net = new NetworkMap(createRegisteredNodes(), 10);
+   @Test(expected = IllegalArgumentException.class) public void testNetworkMapMoreThanMaxCreation() {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 10, 10);
    }
 
-   @Test
-   public void testNetworkLotsOfConnectionsMapCreation() {
-      NetworkMap net = new NetworkMap(createRegisteredNodes(), 6);
+   @Test public void testNetworkLotsOfConnectionsMapCreation() {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 6, 6);
    }
 
-   @Test
-   public void testNetworkMaxLegalConnectionsMapCreation() {
-      NetworkMap net = new NetworkMap(createRegisteredNodes(), 8);
+   @Test public void testNetworkMaxLegalConnectionsMapCreation() {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 8, 8);
    }
 
-   @Test
-   public void testNetworkTwoConnectionsMapCreation() {
+   @Test public void testNetworkTwoConnectionsMapCreation() {
       List<Identity> idents = Arrays.asList(createIdentity("albany"), createIdentity("annapolis"));
-      NetworkMap net = new NetworkMap(new ArrayList<Identity>(idents), 1);
+      NetworkMap net = new NetworkMap(new ArrayList<Identity>(idents), 1, 1);
    }
 
-   public List<Identity> createRegisteredNodes() {
+   @Test public void testLargeMapCreation() {
+      NetworkMap net = new NetworkMap(10000, 5, 10);
+      //net.getFullEdgeList().stream().map(Edge::printEdge).forEach(logger::info);
+      assertEquals(10000, net.getVertices().size());
+   }
+
+   @Ignore
+   @Test public void testExport() throws IOException {
+      NetworkMap net = new NetworkMap(createRegisteredNodes(), 4, 4);
+      NetworkMapTransformer trans = new NetworkMapTransformer(net);
+      String out = trans.export();
+      File file = Utilities.writeFile("text.csv", out);
+      trans = new NetworkMapTransformer(file);
+      assertEquals(net.size(), trans.getNetworkMap().size());
+      checkConnections(net, trans.getNetworkMap());
+   }
+
+   @Test public void testRecreation() {
+      NetworkMap net = new NetworkMap(9, 4, 5);
+      assertEquals(9, net.getVertices().size());
+
+      NetworkMapTransformer trans = new NetworkMapTransformer(net);
+      NetworkMap newMap = trans.applyRegisteredNodes(createRegisteredNodes());
+
+      assertEquals(net.size(), newMap.size());
+
+      checkConnections(net, newMap);
+   }
+
+   private void checkConnections(NetworkMap net1, NetworkMap net2) {
+      List<Vertex> ver1 = net1.getVertices();
+      List<Vertex> ver2 = net2.getVertices();
+      assertEquals(ver1.size(), ver2.size());
+
+      for (int i = 0; i < ver1.size(); i++) {
+         checkVertices(ver1.get(i), ver2.get(i));
+      }
+   }
+
+   private void checkVertices(Vertex ver1, Vertex ver2) {
+      Map<Vertex, Integer> edg1 = ver1.getEdges();
+      Map<Vertex, Integer> edg2 = ver2.getEdges();
+      assertEquals(edg1.size(), edg2.size());
+
+      int tot1 = edg1.keySet().stream().map(Vertex::getId).mapToInt(Integer::intValue).sum();
+      int tot2 = edg2.keySet().stream().map(Vertex::getId).mapToInt(Integer::intValue).sum();
+      assertEquals(tot1, tot2);
+   }
+
+   private List<Identity> createRegisteredNodes() {
       //@formatter:off
       List<Identity> idents = Arrays.asList(
             createIdentity("albany"), 
@@ -139,11 +189,10 @@ public class TestNetworkMap {
       //8
       edges.add(new Edge(boston, carsonCity, 9)); // 9
 
-      return new NetworkMap(3, edges);
+      return new NetworkMap(3, 3, edges);
    }
 
-   @Test
-   public void testConnectionList() {
+   @Test public void testConnectionList() {
       List<Vertex> vertices = createVerticesList();
       NetworkMap net = buildManualNetwork(vertices);
       verifyManualNetworkMap(vertices, net);

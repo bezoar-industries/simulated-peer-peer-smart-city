@@ -47,7 +47,7 @@ public class Vertex {
    public void addEdge(Vertex edge, int cost) {
       // make sure we aren't already connected
       if (isConnected(edge)) {
-         throw new IllegalArgumentException("The supplied vertex [" + edge + "] is already connected to this vertext [" + this + "]");
+         throw new IllegalArgumentException("The supplied vertex [" + edge + "] is already connected to this vertex [" + this + "]");
       }
 
       // make sure we aren't connecting to ourselves

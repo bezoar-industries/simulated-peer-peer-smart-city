@@ -3,6 +3,7 @@ package cs555.chiba.util;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -140,6 +141,20 @@ public class Utilities {
    }
 
    /**
+    * Read an integer from a string.  Convenience method for dealing with checked NumberFormatExceptions.
+    */
+   public static int quietlyParseInt(String snum, int defaultNum) {
+      try {
+         return Integer.parseInt(snum);
+      }
+      catch (NumberFormatException e) {
+         logger.log(Level.SEVERE, "Unable to parse int", e);
+      }
+
+      return defaultNum;
+   }
+
+   /**
     * Convenience method for converting a string to an Enum.
     */
    public static final <E extends Enum<E>> E getEnum(Class<E> clazz, String text) {
@@ -240,5 +255,35 @@ public class Utilities {
    public static int convertHexToInt(String hexString) {
       BigInteger value = new BigInteger(1, convertHexToBytes(hexString));
       return value.intValue();
+   }
+
+   /**
+    * Read a file from the HD
+    */
+   public static byte[] readFile(File file) throws IOException {
+      Path p = file.toPath();
+      return Files.readAllBytes(p);
+   }
+
+   /**
+    * Write this file to the HD
+    */
+   public static File writeFile(String filePath, String data) throws IOException {
+      File file = new File(filePath);
+
+      if (!file.exists()) {
+         file.createNewFile();
+      }
+
+      if (!file.exists() || file.isDirectory() || !file.setWritable(true) || !file.canWrite()) {
+         throw new IOException("Cannot write to file [" + file.getAbsolutePath() + "]");
+      }
+
+      try (RandomAccessFile raf = new RandomAccessFile(file.getAbsolutePath(), "rw")) {
+         raf.setLength(0); // clear file before writing
+         raf.write(data.getBytes());
+      }
+
+      return file;
    }
 }
