@@ -3,9 +3,8 @@ package cs555.chiba.iotDevices;
 import java.util.Arrays;
 import java.util.List;
 
-public class Outlet implements IotDevice{
-
-    private List<String> listOfValidStates = Arrays.asList("powerConsumption", "powerState", "temperature");
+public class StreetLight implements IotDevice{
+    private List<String> listOfValidStates = Arrays.asList("powerConsumption", "lightStatus");
 
     @Override
     public Integer getMetric(String metricName) {
@@ -17,6 +16,6 @@ public class Outlet implements IotDevice{
 
     @Override
     public String toString() {
-        return "Outlet{}";
+        return "StreetLight{}";
     }
 }

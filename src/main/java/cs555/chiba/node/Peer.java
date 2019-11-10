@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -45,31 +44,31 @@ public class Peer implements Node {
         this.eventFactory = EventFactory.getInstance(this);
         this.createIotNetwork(numberOfIoTDevices);
 
-//        this.icp = new Thread(new InteractiveCommandParser(this));
-//        this.icp.start();
-//
-//        try {
-//            //Connect to registry and start thread
-//        	Socket registrySocket = new Socket(registryHost, registryPort);
-//            //add registry to connections cache - we will want to always keep this connection open
-//            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
-//            Thread registryThread = new Thread(new TCPRecieverThread(registrySocket, eventFactory));
-//            this.connections.addRecieverThread(registryThread);
-//            registryThread.start();
-//        } catch (IOException e){
-//            System.out.println("Peer() " + e);
-//        }
-//
-//        //Start a server socket so we can receive incoming connections
-//        this.server = new TCPServerThread(0, connections, eventFactory);
-//        this.myPort = server.getPort();
-//        this.myAddr = server.getAddr();
-//        this.serverThread = new Thread(server);
-//        serverThread.start();
-//
-//        byte[] m = new SampleMessage(id).getBytes();
-//        //Send registration
-//        connections.send(m);
+        this.icp = new Thread(new InteractiveCommandParser(this));
+        this.icp.start();
+
+        try {
+            //Connect to registry and start thread
+        	Socket registrySocket = new Socket(registryHost, registryPort);
+            //add registry to connections cache - we will want to always keep this connection open
+            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
+            Thread registryThread = new Thread(new TCPRecieverThread(registrySocket, eventFactory));
+            this.connections.addRecieverThread(registryThread);
+            registryThread.start();
+        } catch (IOException e){
+            System.out.println("Peer() " + e);
+        }
+
+        //Start a server socket so we can receive incoming connections
+        this.server = new TCPServerThread(0, connections, eventFactory);
+        this.myPort = server.getPort();
+        this.myAddr = server.getAddr();
+        this.serverThread = new Thread(server);
+        serverThread.start();
+
+        byte[] m = new SampleMessage(id).getBytes();
+        //Send registration
+        connections.send(m);
     }
 
     private void createIotNetwork(int numberOfIoTDevices) {
@@ -87,7 +86,7 @@ public class Peer implements Node {
         for(int i = 0; i < numberOfIoTDevices; i++) {
 
             // Change this int when adding a new IoT device
-            int numberOfPossibleIotDevices = 17;
+            int numberOfPossibleIotDevices = 19;
             Random random = new Random();
             int possibleDevicesRandomIndex = random.nextInt(numberOfPossibleIotDevices);
             switch(possibleDevicesRandomIndex){
@@ -142,10 +141,24 @@ public class Peer implements Node {
                 case 16 :
                     this.connectedIotDevices.add(new Clock());
                     break;
+                case 17 :
+                    this.connectedIotDevices.add(new StreetLight());
+                    break;
+                case 18 :
+                    this.connectedIotDevices.add(new PowerMeter());
+                    break;
             }
         }
         System.out.println(this.connectedIotDevices);
         System.out.println("Number of actual devices: " + this.connectedIotDevices.size());
+    }
+
+    private Integer calculateTotalDevicesWithMetric(String metricName) {
+	    int devicesWithMetric = 0;
+	    for (IotDevice device : this.connectedIotDevices) {
+	        devicesWithMetric += device.getMetric(metricName);
+        }
+        return devicesWithMetric;
     }
 
     /**
