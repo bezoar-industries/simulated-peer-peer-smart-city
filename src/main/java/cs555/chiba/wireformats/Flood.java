@@ -20,6 +20,7 @@ public class Flood implements Event{
     private final int SIZE_OF_INT = 4;
     private UUID ID;
     private UUID senderID;
+    private String target;
     private int hopLimit;
     private int currentHop;
     private Socket socket;
@@ -31,11 +32,12 @@ public class Flood implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public Flood(UUID ID, UUID senderID, int currentHop, int hopLimit){
+    public Flood(UUID ID, UUID senderID, String target, int currentHop, int hopLimit){
         this.ID = ID;
         this.senderID = senderID;
         this.currentHop = currentHop;
         this.hopLimit = hopLimit;
+        this.target = target;
     }
 
     /**
@@ -55,6 +57,10 @@ public class Flood implements Event{
         byte[] senderIDbytes = new byte[senderIDlen]; 
         b.get(senderIDbytes);
         senderID = UUID.fromString(new String(senderIDbytes));
+        int targetLen = b.getInt();
+        byte[] targetBytes = new byte[targetLen]; 
+        b.get(targetBytes);
+        target = new String(targetBytes);
         currentHop = b.getInt();
         hopLimit = b.getInt();
         this.socket = socket;
@@ -67,12 +73,15 @@ public class Flood implements Event{
     public byte[] getBytes(){
     	byte[] IDbytes = ID.toString().getBytes();
     	byte[] senderIDbytes = senderID.toString().getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+4*SIZE_OF_INT+1);
+    	byte[] targetBytes = target.getBytes();
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+5*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
     	b.putInt(senderIDbytes.length);
     	b.put(senderIDbytes);
+    	b.putInt(targetBytes.length);
+    	b.put(targetBytes);
     	b.putInt(currentHop);
     	b.putInt(hopLimit);
         return b.array();
@@ -88,6 +97,10 @@ public class Flood implements Event{
     
     public UUID getSenderID() {
     	return senderID;
+    }
+    
+    public String getTarget() {
+    	return target;
     }
     
     public int getCurrentHop() {

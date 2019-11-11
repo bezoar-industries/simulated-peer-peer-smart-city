@@ -14,9 +14,9 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 
-public class RandomWalk implements Event{
+public class GossipQuery implements Event{
 
-    private final int type = Protocol.RANDOM_WALK;
+    private final int type = Protocol.GOSSIP_QUERY;
     private final int SIZE_OF_INT = 4;
     private UUID ID;
     private UUID senderID;
@@ -32,7 +32,7 @@ public class RandomWalk implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public RandomWalk(UUID ID, UUID senderID, String target, int currentHop, int hopLimit){
+    public GossipQuery(UUID ID, UUID senderID, String target, int currentHop, int hopLimit){
         this.ID = ID;
         this.senderID = senderID;
         this.currentHop = currentHop;
@@ -45,7 +45,7 @@ public class RandomWalk implements Event{
      * @param message The serialized message
      * @param socket  The socket this message was received from
      */
-    public RandomWalk(byte[] message, Socket socket){ 
+    public GossipQuery(byte[] message, Socket socket){ 
     	ByteBuffer b = ByteBuffer.allocate(message.length).put(message);
     	b.rewind();
         b.get();

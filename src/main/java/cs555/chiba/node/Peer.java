@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.UUID;
 
 import cs555.chiba.transport.TCPConnectionsCache;
@@ -21,10 +22,13 @@ import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
 import cs555.chiba.util.LRUCache;
+import cs555.chiba.util.Metric;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
 import cs555.chiba.wireformats.SampleMessage;
 import cs555.chiba.wireformats.Flood;
+import cs555.chiba.wireformats.GossipData;
+import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.RandomWalk;
 
 public class Peer implements Node {
@@ -37,6 +41,8 @@ public class Peer implements Node {
     private Thread serverThread;
     private UUID id;
     private LRUCache queryIDCache;
+    private LRUCache gossipCache;
+    private HashMap<UUID, Metric> metrics;
 
 	public Peer(InetAddress registryHost, int registryPort){
 		//Set-up activities - get the event factory, create the ICP
@@ -45,6 +51,8 @@ public class Peer implements Node {
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
         queryIDCache = new LRUCache(1000);
+        gossipCache = new LRUCache(1000);
+        metrics = new HashMap<UUID, Metric>();
 
         try {
             //Connect to registry and start thread
@@ -103,17 +111,18 @@ public class Peer implements Node {
     public void Flood(Flood e){
     	if(queryIDCache.containsEntry(e.getID())) {
     		//We've already processed this query - ignore it
-    		queryIDCache.putEntry(e.getID(), -1);
+    		queryIDCache.putEntry(e.getID(), e.getSenderID());
     		return;
     	}
     	
         System.out.println("Recieved flood message with ID: "+e.getID());
-        queryIDCache.putEntry(e.getID(), -1);
+        queryIDCache.putEntry(e.getID(), e.getSenderID());
         //Check if queried data is here - if so, log appropriately
+        metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
         
-        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        if(e.getCurrentHop()+1 < e.getHopLimit() || e.getHopLimit() == -1) {
         	//If the message hasn't yet hit its hop limit
-        	byte[] m = new Flood(e.getID(), id, e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
         	connections.sendAll(m, e.getSenderID());
         }
     }
@@ -127,15 +136,53 @@ public class Peer implements Node {
     		//We've already processed this query - don't process it again (but still forward it)
     		System.out.println("Recieved random walk message with ID: "+e.getID());
     		//Check if queried data is here - if so, log appropriately
+    		metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
     	}
-    	queryIDCache.putEntry(e.getID(), -1);
+    	queryIDCache.putEntry(e.getID(), e.getSenderID());
        
         if(e.getCurrentHop()+1 < e.getHopLimit()) {
         	//If the message hasn't yet hit its hop limit
-        	byte[] m = new Flood(e.getID(), id, e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
         	connections.sendToRandom(m, e.getSenderID());
         }
     }
+    
+    private void GossipData(GossipData e) {
+    	boolean updated = false;
+    	System.out.println("Recieved gossip query from: "+e.getSenderID());
+		for(String device : e.getDevices()) {
+			if(gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(device.getBytes()), device, e.getSenderID()))
+				updated = true;
+		}
+		if (updated) {
+			byte[] m = new GossipData(id, gossipCache.getValueLists()).getBytes();
+			connections.sendAll(m, e.getSenderID());
+		}
+	}
+    
+    private void GossipQuery(GossipQuery e) {
+    	if(queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - ignore it
+    		queryIDCache.putEntry(e.getID(), e.getSenderID());
+    		return;
+    	}
+    	
+        System.out.println("Recieved gossip message with ID: "+e.getID());
+        queryIDCache.putEntry(e.getID(), e.getSenderID());
+        //Check if queried data is here - if so, log appropriately
+        metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+        
+        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	if(gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
+	        	for(UUID targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
+	        		if(targetID != e.getSenderID())
+	        			connections.send(targetID, m);
+	        	}
+        	}
+        }
+	}
     
     /**
      * Routes messages to the correct handler
@@ -146,9 +193,11 @@ public class Peer implements Node {
         if (e instanceof SampleMessage){ SampleMessage((SampleMessage)e); }
         else if (e instanceof Flood){ Flood((Flood)e); }
         else if (e instanceof RandomWalk){ RandomWalk((RandomWalk)e); }
+        else if (e instanceof GossipData){ GossipData((GossipData)e); }
+        else if (e instanceof GossipQuery){ GossipQuery((GossipQuery)e); }
     }
-    
-    /**
+
+	/**
      * A method to be called by the InteractiveCommandParser
      */
     public void sampleCommand() {

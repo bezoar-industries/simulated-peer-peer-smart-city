@@ -14,15 +14,12 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 
-public class RandomWalk implements Event{
+public class GossipData implements Event{
 
-    private final int type = Protocol.RANDOM_WALK;
+    private final int type = Protocol.GOSSIP_DATA;
     private final int SIZE_OF_INT = 4;
-    private UUID ID;
     private UUID senderID;
-    private String target;
-    private int hopLimit;
-    private int currentHop;
+    private String[] devices;
     private Socket socket;
 
     /**
@@ -32,12 +29,9 @@ public class RandomWalk implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public RandomWalk(UUID ID, UUID senderID, String target, int currentHop, int hopLimit){
-        this.ID = ID;
+    public GossipData(UUID senderID, String[] devices){
         this.senderID = senderID;
-        this.currentHop = currentHop;
-        this.hopLimit = hopLimit;
-        this.target = target;
+        this.devices = devices;
     }
 
     /**
@@ -45,24 +39,22 @@ public class RandomWalk implements Event{
      * @param message The serialized message
      * @param socket  The socket this message was received from
      */
-    public RandomWalk(byte[] message, Socket socket){ 
+    public GossipData(byte[] message, Socket socket){ 
     	ByteBuffer b = ByteBuffer.allocate(message.length).put(message);
     	b.rewind();
         b.get();
-        int IDlen = b.getInt();
-        byte[] IDbytes = new byte[IDlen]; 
-        b.get(IDbytes);
-        ID = UUID.fromString(new String(IDbytes));
         int senderIDlen = b.getInt();
         byte[] senderIDbytes = new byte[senderIDlen]; 
         b.get(senderIDbytes);
         senderID = UUID.fromString(new String(senderIDbytes));
-        int targetLen = b.getInt();
-        byte[] targetBytes = new byte[targetLen]; 
-        b.get(targetBytes);
-        target = new String(targetBytes);
-        currentHop = b.getInt();
-        hopLimit = b.getInt();
+        int numDevices = b.getInt();
+        devices = new String[numDevices];
+        for(int i = 0; i < numDevices; i++) {
+        	int deviceLength = b.getInt();
+        	byte[] deviceBytes = new byte[deviceLength]; 
+        	b.get(deviceBytes);
+        	devices[i] = new String(deviceBytes);
+        }
         this.socket = socket;
     }
 
@@ -71,19 +63,21 @@ public class RandomWalk implements Event{
      * @return byte[] The serialized message
      */
     public byte[] getBytes(){
-    	byte[] IDbytes = ID.toString().getBytes();
     	byte[] senderIDbytes = senderID.toString().getBytes();
-    	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+5*SIZE_OF_INT+1);
+    	int size = senderIDbytes.length + 2*SIZE_OF_INT + 1;
+    	for(String device : devices) {
+    		byte[] deviceBytes = device.getBytes();
+    		size += deviceBytes.length + SIZE_OF_INT;
+    	}
+    	ByteBuffer b = ByteBuffer.allocate(size);
     	b.put((byte)type);
-    	b.putInt(IDbytes.length);
-    	b.put(IDbytes);
     	b.putInt(senderIDbytes.length);
     	b.put(senderIDbytes);
-    	b.putInt(targetBytes.length);
-    	b.put(targetBytes);
-    	b.putInt(currentHop);
-    	b.putInt(hopLimit);
+    	b.putInt(devices.length);
+    	for(String device : devices) {
+    		b.putInt(device.getBytes().length);
+    		b.put(device.getBytes());
+    	}
         return b.array();
     }
 
@@ -91,24 +85,12 @@ public class RandomWalk implements Event{
         return type;
     }
     
-    public UUID getID(){
-        return ID;
-    }
-    
     public UUID getSenderID() {
     	return senderID;
     }
     
-    public String getTarget() {
-    	return target;
-    }
-    
-    public int getCurrentHop() {
-    	return currentHop;
-    }
-    
-    public int getHopLimit(){
-        return hopLimit;
+    public String[] getDevices() {
+    	return devices;
     }
 
     public Socket getSocket() {
