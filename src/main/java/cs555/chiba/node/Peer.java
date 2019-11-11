@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.transport.TCPConnectionsCache;
 import cs555.chiba.transport.TCPReceiverThread;
 import cs555.chiba.transport.TCPSender;
@@ -42,11 +43,14 @@ public class Peer implements Node {
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
 
+
+      Identity whoAmI = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
+
         try {
             //Connect to registry and start thread
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
-            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket)); 
+            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket), whoAmI);
             Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
             this.connections.addReceiverThread(registryThread);
             registryThread.start();
@@ -54,12 +58,12 @@ public class Peer implements Node {
            logger.log(Level.SEVERE, "Peer() ", e);
         }
 
-        //Start a server socket so we can receive incoming connections
-        this.server = new TCPServerThread(0, connections, eventFactory);
-        this.myPort = server.getPort();
-        this.myAddr = server.getAddr();
-        this.serverThread = new Thread(server);
-        serverThread.start();
+      //Start a server socket so we can receive incoming connections
+      this.server = new TCPServerThread(0, connections, eventFactory);
+      this.myPort = server.getPort();
+      this.myAddr = server.getAddr();
+      this.serverThread = new Thread(server);
+      serverThread.start();
         
         byte[] m = new SampleMessage(999).getBytes();
         //Send registration

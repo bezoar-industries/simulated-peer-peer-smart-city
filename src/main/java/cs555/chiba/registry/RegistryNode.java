@@ -38,6 +38,7 @@ public class RegistryNode extends ServiceNode {
       int port = Utilities.parsePort(args[0]);
       Identity ident = Identity.builder().withHost(InetAddress.getLocalHost().getHostAddress()).withPort(port).build();
 
+      logger.info("Starting up as [" + ident.getIdentityKey() + "]");
       return new RegistryNode(ident);
    }
 

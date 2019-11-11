@@ -26,7 +26,7 @@ public class TCPConnectionsCache implements AutoCloseable{
     private ArrayList<Thread> receiverThreads = new ArrayList<>();
     private ConcurrentHashMap<Identity,TCPSender> senders = new ConcurrentHashMap<>();
 
-    private String registryID;
+    private Identity registryID;
 
     public TCPConnectionsCache(){}
 
@@ -35,9 +35,9 @@ public class TCPConnectionsCache implements AutoCloseable{
      * A convenience for peers connecting to a registry
      * @param sender A reference to the sender object
      */
-    public TCPConnectionsCache(TCPSender sender){
+    public TCPConnectionsCache(TCPSender sender, Identity ident){
         this.addSender(sender);
-        this.registryID = sender.getSocket().getRemoteSocketAddress().toString();
+        this.registryID = ident;
     }
 
     /**
@@ -55,8 +55,8 @@ public class TCPConnectionsCache implements AutoCloseable{
     public void addSender(TCPSender sender){
     	Thread senderThread = new Thread(sender);
         senderThread.start();
-        String str = sender.getSocket().getRemoteSocketAddress().toString();
-        senders.putIfAbsent(Identity.builder().withIdentityKey(str).build(), sender);
+        Identity ident = Identity.builder().withSocketAddress(sender.getSocket().getRemoteSocketAddress()).build();
+        senders.putIfAbsent(ident, sender);
     }
     
     /**
