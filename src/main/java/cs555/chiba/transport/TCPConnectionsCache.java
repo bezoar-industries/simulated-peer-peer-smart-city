@@ -12,15 +12,16 @@ package cs555.chiba.transport;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 
 import cs555.chiba.transport.TCPSender;
 
 
 public class TCPConnectionsCache{
     private ArrayList<Thread> recieverThreads = new ArrayList<>();
-    private ConcurrentHashMap<String,TCPSender> senders = new ConcurrentHashMap<String,TCPSender>();
+    private ConcurrentHashMap<UUID,TCPSender> senders = new ConcurrentHashMap<UUID,TCPSender>();
 
-    private String registryID;
+    private UUID registryID;
 
     public TCPConnectionsCache(){}
 
@@ -32,8 +33,8 @@ public class TCPConnectionsCache{
     public TCPConnectionsCache(TCPSender sender){
         Thread senderThread = new Thread(sender);
         senderThread.start();
-        this.addSender(sender);
-        this.registryID = sender.getSocket().getRemoteSocketAddress().toString();
+        this.registryID = UUID.nameUUIDFromBytes("registry".getBytes());
+        this.addSender(sender, registryID);
     }
 
     /**
@@ -48,11 +49,10 @@ public class TCPConnectionsCache{
      * Adds a sender to the cache with the default ID
      * @param sender A reference to the sender object
      */
-    public void addSender(TCPSender sender){
+    public void addSender(TCPSender sender, UUID ID){
     	Thread senderThread = new Thread(sender);
         senderThread.start();
-        String str = sender.getSocket().getRemoteSocketAddress().toString();
-        senders.putIfAbsent(str, sender);
+        senders.putIfAbsent(ID, sender);
     }
     
     /**
@@ -60,7 +60,7 @@ public class TCPConnectionsCache{
      * @param ID The ID of the sender
      * @param sender A reference to the sender object
      */
-    public void addSender(String ID, TCPSender sender){
+    public void addSender(UUID ID, TCPSender sender){
     	Thread senderThread = new Thread(sender);
         senderThread.start();
         senders.putIfAbsent(ID, sender);
@@ -81,7 +81,7 @@ public class TCPConnectionsCache{
      * Removes a sender from the cache
      * @param ID The ID of the sender to be removed
      */
-    public void removeSender(String ID){
+    public void removeSender(UUID ID){
          senders.remove(ID);
     }
 
@@ -89,7 +89,7 @@ public class TCPConnectionsCache{
      * Check if we have a sender with the given ID
      * @returns boolean True if the sender exists
      */
-    public boolean sendersContains(String item){
+    public boolean sendersContains(UUID item){
         return senders.containsKey(item);
     }
 
@@ -98,17 +98,58 @@ public class TCPConnectionsCache{
      * @param ID The ID of the recipient
      * @param m The serialized message to be sent
      */
-    public void send(String ID, byte[] message){
+    public void send(UUID ID, byte[] message){
         senders.get(ID).addMessage(message);
+    }
+    
+    /**
+     * Send a message to the sender with the given ID
+     * @param ID The ID of the recipient
+     * @param m The serialized message to be sent
+     */
+    public void sendToRandom(byte[] message){
+    	getRandomSender().addMessage(message);
+    }
+    
+    /**
+     * Send a message to the sender with the given ID
+     * @param ID The ID of the recipient
+     * @param m The serialized message to be sent
+     */
+    public void sendToRandom(byte[] message, UUID exclude){
+    	Random generator = new Random();
+    	Object[] keys = senders.keySet().toArray();
+    	
+    	UUID key;
+    	do {
+    		key = (UUID) keys[generator.nextInt(keys.length)];
+    	} while(key == exclude);
+    	
+    	TCPSender randomSender = senders.get(key);
+    	randomSender.addMessage(message);
+    }
+    
+    /**
+     * Convenience to send a message over every connection in the cache
+     * except the registry
+     * @param m The serialized message to be sent
+     */
+    public void sendAll(byte[] message){
+        for (UUID key : senders.keySet()) {
+        	if(key != registryID)
+        		this.send(key, message);
+        }
     }
 
     /**
      * Convenience to send a message over every connection in the cache
+     * except the registry
      * @param m The serialized message to be sent
      */
-    public void sendAll(byte[] message){
-        for (String key : senders.keySet()) {
-            this.send(key, message);
+    public void sendAll(byte[] message, UUID exclude){
+        for (UUID key : senders.keySet()) {
+        	if(key != registryID && key != exclude)
+        		this.send(key, message);
         }
     }
 
