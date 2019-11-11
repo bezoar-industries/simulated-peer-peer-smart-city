@@ -15,7 +15,11 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
+import cs555.chiba.iotDevices.*;
 import cs555.chiba.transport.TCPConnectionsCache;
 import cs555.chiba.transport.TCPRecieverThread;
 import cs555.chiba.transport.TCPSender;
@@ -43,11 +47,15 @@ public class Peer implements Node {
     private LRUCache queryIDCache;
     private LRUCache gossipCache;
     private HashMap<UUID, Metric> metrics;
+    private int id;
+    private List<IotDevice> connectedIotDevices;
 
-	public Peer(InetAddress registryHost, int registryPort){
+	public Peer(InetAddress registryHost, int registryPort, int numberOfIoTDevices){
 		//Set-up activities - get the event factory, create the ICP
 		this.id = UUID.randomUUID();
         this.eventFactory = EventFactory.getInstance(this);
+        this.createIotNetwork(numberOfIoTDevices);
+
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
         queryIDCache = new LRUCache(1000);
@@ -58,7 +66,7 @@ public class Peer implements Node {
             //Connect to registry and start thread
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
-            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket)); 
+            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
             Thread registryThread = new Thread(new TCPRecieverThread(registrySocket, eventFactory));
             this.connections.addRecieverThread(registryThread);
             registryThread.start();
@@ -72,13 +80,102 @@ public class Peer implements Node {
         this.myAddr = server.getAddr();
         this.serverThread = new Thread(server);
         serverThread.start();
-        
         byte[] m = new SampleMessage(0).getBytes();
         //Send to registry
         connections.send(m); 
     }
-    
-	/**
+
+    private void createIotNetwork(int numberOfIoTDevices) {
+        this.connectedIotDevices = new LinkedList<>();
+        if(numberOfIoTDevices == 0) {
+            // if no number of IoT devices defined, then generate a random number between 3 and 30 devices
+            // Upper bounds of 27 and then adding 3 to ensure the range above is followed
+            Random random = new Random();
+            numberOfIoTDevices = random.nextInt(27) + 3;
+        }
+
+        System.out.println("number of devices: " + numberOfIoTDevices);
+
+        // Add devices to our array list
+        for(int i = 0; i < numberOfIoTDevices; i++) {
+
+            // Change this int when adding a new IoT device
+            int numberOfPossibleIotDevices = 19;
+            Random random = new Random();
+            int possibleDevicesRandomIndex = random.nextInt(numberOfPossibleIotDevices);
+            switch(possibleDevicesRandomIndex){
+                case 0 :
+                    this.connectedIotDevices.add(new Thermometer());
+                    break;
+                case 1 :
+                    this.connectedIotDevices.add(new Thermostat());
+                    break;
+                case 2 :
+                    this.connectedIotDevices.add(new DoorLock());
+                    break;
+                case 3 :
+                    this.connectedIotDevices.add(new Outlet());
+                    break;
+                case 4 :
+                    this.connectedIotDevices.add(new AirPollutionMonitor());
+                    break;
+                case 5 :
+                    this.connectedIotDevices.add(new AirVent());
+                    break;
+                case 6 :
+                    this.connectedIotDevices.add(new DoorSensor());
+                    break;
+                case 7 :
+                    this.connectedIotDevices.add(new Dryer());
+                    break;
+                case 8 :
+                    this.connectedIotDevices.add(new LightSwitch());
+                    break;
+                case 9 :
+                    this.connectedIotDevices.add(new Microwave());
+                    break;
+                case 10 :
+                    this.connectedIotDevices.add(new Refrigerator());
+                    break;
+                case 11 :
+                    this.connectedIotDevices.add(new TV());
+                    break;
+                case 12 :
+                    this.connectedIotDevices.add(new WashMachine());
+                    break;
+                case 13 :
+                    this.connectedIotDevices.add(new Watch());
+                    break;
+                case 14 :
+                    this.connectedIotDevices.add(new WaterLeakSensor());
+                    break;
+                case 15 :
+                    this.connectedIotDevices.add(new WindowSensor());
+                    break;
+                case 16 :
+                    this.connectedIotDevices.add(new Clock());
+                    break;
+                case 17 :
+                    this.connectedIotDevices.add(new StreetLight());
+                    break;
+                case 18 :
+                    this.connectedIotDevices.add(new PowerMeter());
+                    break;
+            }
+        }
+        System.out.println(this.connectedIotDevices);
+        System.out.println("Number of actual devices: " + this.connectedIotDevices.size());
+    }
+
+    private Integer calculateTotalDevicesWithMetric(String metricName) {
+	    int devicesWithMetric = 0;
+	    for (IotDevice device : this.connectedIotDevices) {
+	        devicesWithMetric += device.getMetric(metricName);
+        }
+        return devicesWithMetric;
+    }
+
+    /**
      * Convenience to sends a single message to an IP and Port without creating a new thread
      * WARNING - recipient will not be able to reply over the same socket
      * This should not be used for long-term connections
@@ -210,13 +307,13 @@ public class Peer implements Node {
      */
 	public static void main(String[] args) {
 		try {
-			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]));
+			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), 0);
 		} catch (UnknownHostException e){
 			System.out.println("Peer.main() " + e);
 		}
         try {
         	//Idle - maybe add an "exit" command in the ICP?
-            Thread.currentThread().join(); 
+            Thread.currentThread().join();
         } catch (InterruptedException e){ }
 
 	}
