@@ -1,5 +1,6 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.util.Utilities;
 
 import java.io.File;
@@ -9,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,7 +40,7 @@ public class NetworkMapTransformer {
    private Map<Vertex, Vertex> createMapping(List<Vertex> vertices, List<Identity> registeredNodes) {
       Map<Vertex, Vertex> assignments = new HashMap<>();
       for (int i = 0; i < vertices.size(); i++) {
-         Vertex ver = new Vertex(vertices.get(i).getId(), registeredNodes.get(i));
+         Vertex ver = new Vertex(vertices.get(i).getId(), registeredNodes.get(i), vertices.get(i).getDeviceCount());
          assignments.put(vertices.get(i), ver);
       }
 

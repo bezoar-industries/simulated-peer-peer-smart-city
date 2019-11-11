@@ -1,5 +1,6 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.util.Utilities;
 
 import java.util.ArrayList;
@@ -225,7 +226,7 @@ public class NetworkMap {
    private void initializeLoop(List<Identity> nodes) {
       Vertex prev = null;
       for (int i = 0; i < nodes.size(); i++) {
-         Vertex vertex = new Vertex(i, nodes.get(i));
+         Vertex vertex = new Vertex(i, nodes.get(i), generateIotDevices());
          this.vertices.add(vertex);
 
          if (prev != null) {
@@ -245,6 +246,13 @@ public class NetworkMap {
     */
    private int generateCost() {
       return ThreadLocalRandom.current().nextInt(1, 11);
+   }
+
+   /**
+    * Random iot device count between 3 and 30.
+    */
+   private int generateIotDevices() {
+      return ThreadLocalRandom.current().nextInt(3, 31);
    }
 
    @Override public int hashCode() {

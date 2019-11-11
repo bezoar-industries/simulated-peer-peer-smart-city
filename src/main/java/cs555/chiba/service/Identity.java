@@ -1,4 +1,4 @@
-package cs555.chiba.overlay.network;
+package cs555.chiba.service;
 
 import cs555.chiba.util.Utilities;
 

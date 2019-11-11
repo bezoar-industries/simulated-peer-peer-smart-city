@@ -10,15 +10,21 @@
 package cs555.chiba.transport;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.transport.TCPSender;
+import cs555.chiba.util.Utilities;
 
+public class TCPConnectionsCache implements AutoCloseable{
+    private static final Logger logger = Logger.getLogger(TCPConnectionsCache.class.getName());
 
-public class TCPConnectionsCache{
-    private ArrayList<Thread> recieverThreads = new ArrayList<>();
-    private ConcurrentHashMap<String,TCPSender> senders = new ConcurrentHashMap<String,TCPSender>();
+    private ArrayList<Thread> receiverThreads = new ArrayList<>();
+    private ConcurrentHashMap<Identity,TCPSender> senders = new ConcurrentHashMap<>();
 
     private String registryID;
 
@@ -30,8 +36,6 @@ public class TCPConnectionsCache{
      * @param sender A reference to the sender object
      */
     public TCPConnectionsCache(TCPSender sender){
-        Thread senderThread = new Thread(sender);
-        senderThread.start();
         this.addSender(sender);
         this.registryID = sender.getSocket().getRemoteSocketAddress().toString();
     }
@@ -40,8 +44,8 @@ public class TCPConnectionsCache{
      * Adds a receiver thread to the cache
      * @param t A receiver thread
      */
-    public synchronized void addRecieverThread(Thread t){
-        recieverThreads.add(t);
+    public synchronized void addReceiverThread(Thread t){
+        receiverThreads.add(t);
     }
 
     /**
@@ -52,7 +56,7 @@ public class TCPConnectionsCache{
     	Thread senderThread = new Thread(sender);
         senderThread.start();
         String str = sender.getSocket().getRemoteSocketAddress().toString();
-        senders.putIfAbsent(str, sender);
+        senders.putIfAbsent(Identity.builder().withIdentityKey(str).build(), sender);
     }
     
     /**
@@ -60,7 +64,7 @@ public class TCPConnectionsCache{
      * @param ID The ID of the sender
      * @param sender A reference to the sender object
      */
-    public void addSender(String ID, TCPSender sender){
+    public void addSender(Identity ID, TCPSender sender){
     	Thread senderThread = new Thread(sender);
         senderThread.start();
         senders.putIfAbsent(ID, sender);
@@ -73,8 +77,7 @@ public class TCPConnectionsCache{
     public TCPSender getRandomSender() {
     	Random generator = new Random();
     	Object[] values = senders.values().toArray();
-    	TCPSender randomSender = (TCPSender) values[generator.nextInt(values.length)];
-    	return randomSender;
+    	return (TCPSender) values[generator.nextInt(values.length)];
     }
 
     /**
@@ -96,27 +99,37 @@ public class TCPConnectionsCache{
     /**
      * Send a message to the sender with the given ID
      * @param ID The ID of the recipient
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
-    public void send(String ID, byte[] message){
+    public void send(Identity ID, byte[] message){
         senders.get(ID).addMessage(message);
     }
 
     /**
      * Convenience to send a message over every connection in the cache
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void sendAll(byte[] message){
-        for (String key : senders.keySet()) {
+        for (Identity key : senders.keySet()) {
             this.send(key, message);
         }
     }
 
     /**
      * Convenience to send a message to the registry
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void send(byte[] message){
         senders.get(registryID).addMessage(message);
+    }
+
+    public List<Identity> listConnections() {
+        return Utilities.copy(senders.keySet());
+    }
+
+    @Override
+    public void close() {
+        this.receiverThreads.forEach(Thread::interrupt);
+        this.senders.values().forEach(TCPSender::close);
     }
 }

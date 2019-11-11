@@ -13,9 +13,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import cs555.chiba.transport.TCPConnectionsCache;
-import cs555.chiba.transport.TCPRecieverThread;
+import cs555.chiba.transport.TCPReceiverThread;
 import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
@@ -24,18 +26,18 @@ import cs555.chiba.wireformats.EventFactory;
 import cs555.chiba.wireformats.SampleMessage;
 
 public class Peer implements Node {
-	private Thread icp;
+   private static final Logger logger = Logger.getLogger(Peer.class.getName());
+
+   private Thread icp;
 	private TCPServerThread server;
 	private EventFactory eventFactory;
     private TCPConnectionsCache connections;
     private int myPort;
     private InetAddress myAddr;
     private Thread serverThread;
-    private int id;
 
-	public Peer(InetAddress registryHost, int registryPort, int id){
+	public Peer(InetAddress registryHost, int registryPort){
 		//Set-up activities - get the event factory, create the ICP
-		this.id = id;
         this.eventFactory = EventFactory.getInstance(this);
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
@@ -45,11 +47,11 @@ public class Peer implements Node {
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
             this.connections = new TCPConnectionsCache(new TCPSender(registrySocket)); 
-            Thread registryThread = new Thread(new TCPRecieverThread(registrySocket, eventFactory));
-            this.connections.addRecieverThread(registryThread);
+            Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
+            this.connections.addReceiverThread(registryThread);
             registryThread.start();
         } catch (IOException e){
-            System.out.println("Peer() " + e);
+           logger.log(Level.SEVERE, "Peer() ", e);
         }
 
         //Start a server socket so we can receive incoming connections
@@ -59,7 +61,7 @@ public class Peer implements Node {
         this.serverThread = new Thread(server);
         serverThread.start();
         
-        byte[] m = new SampleMessage(id).getBytes();
+        byte[] m = new SampleMessage(999).getBytes();
         //Send registration
         connections.send(m); 
     }
@@ -87,7 +89,7 @@ public class Peer implements Node {
      * @param e The SampleMessage
      */
     public void SampleMessage(SampleMessage e){
-        System.out.println("Recieved sample message with num: "+e.getNum());
+        logger.info("Recieved sample message with num: "+e.getNum());
     }
     
     /**
@@ -103,7 +105,7 @@ public class Peer implements Node {
      * A method to be called by the InteractiveCommandParser
      */
     public void sampleCommand() {
-    	System.out.println("This is a sample command");
+       logger.info("This is a sample command");
     }
 	
     /**
@@ -112,9 +114,9 @@ public class Peer implements Node {
      */
 	public static void main(String[] args) {
 		try {
-			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]));
 		} catch (UnknownHostException e){
-			System.out.println("Peer.main() " + e);
+			logger.log(Level.SEVERE, "Peer.main() ", e);
 		}
         try {
         	//Idle - maybe add an "exit" command in the ICP?

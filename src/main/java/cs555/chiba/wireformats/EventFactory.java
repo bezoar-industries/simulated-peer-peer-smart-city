@@ -42,7 +42,7 @@ public class EventFactory {
     /**
      * Deserializes a message and routes it to the associated Node's onEvent method
      * @param message The serialized message to be routed
-     * @param socket The socket that the message was recieved over
+     * @param socket The socket that the message was received over
      */
     public void processMessage(byte[] message, Socket socket) {
         int type = message[0];
