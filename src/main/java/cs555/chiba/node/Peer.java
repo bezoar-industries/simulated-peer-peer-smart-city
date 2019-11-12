@@ -9,18 +9,6 @@
 
 package cs555.chiba.node;
 
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.UUID;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
-
 import cs555.chiba.iotDevices.*;
 import cs555.chiba.service.Identity;
 import cs555.chiba.transport.TCPConnectionsCache;
@@ -28,27 +16,26 @@ import cs555.chiba.transport.TCPReceiverThread;
 import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
-
-import cs555.chiba.util.Utilities;
-
 import cs555.chiba.util.LRUCache;
 import cs555.chiba.util.Metric;
-
+import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
-import cs555.chiba.wireformats.SampleMessage;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipData;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.RandomWalk;
+import cs555.chiba.wireformats.SampleMessage;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

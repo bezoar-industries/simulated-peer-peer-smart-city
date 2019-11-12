@@ -10,11 +10,7 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * @author mmuller
- *
- * Start up the discovery node that returns a random node to folks who need access to the system
- */
+
 public class RegistryNode extends ServiceNode {
 
    private static final Logger logger = Logger.getLogger(RegistryNode.class.getName());

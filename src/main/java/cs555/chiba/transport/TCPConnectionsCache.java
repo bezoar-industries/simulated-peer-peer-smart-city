@@ -9,8 +9,6 @@
 
 package cs555.chiba.transport;
 
-import cs555.chiba.util.Utilities;
-
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
