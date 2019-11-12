@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 
 public class Utilities {
 
-   public enum METRIC_TYPES {POWER_CONSUPMTION, POWER_STATE, AIR_QUALITY, TEMPERATURE, THROTTLE_STATE, BATTERY_PERCENTAGE, CURRENT_TIME, TIME_SINCE_LAST_SYNC, LOCK_STATE,
+   public enum METRIC_TYPES {POWER_CONSUMPTION, POWER_STATE, AIR_QUALITY, TEMPERATURE, THROTTLE_STATE, BATTERY_PERCENTAGE, CURRENT_TIME, TIME_SINCE_LAST_SYNC, LOCK_STATE,
                                 INSIDE_TEMPERATURE, OPEN_STATE, CURRENT_CYCLE_STEP, LIGHT_STATUS, HOUSE_POWER_STATUS, FRIDGE_TEMPERATURE, FREEZER_TEMPERATURE, ICE_LEVEL,
                                 RECORD_HIGH, RECORD_LOW, SET_TEMPERATURE, TIME_TO_NEXT_TERMPERATURE_CHANGE, CPU_USAGE, MEMORY_USAGE, NETFLIX, AMAZON_PRIME, HEART_RATE,
-                                CURRENT_LEAK, };
+                                CURRENT_LEAK}
 
    private static final Logger logger = Logger.getLogger(Utilities.class.getName());
 
@@ -162,14 +162,12 @@ public class Utilities {
    /**
     * Convenience method for converting a string to an Enum.
     */
-   public static final <E extends Enum<E>> E getEnum(Class<E> clazz, String text) {
-      for (E state : clazz.getEnumConstants()) {
-         if (state.toString().equalsIgnoreCase(text)) {
-            return state;
-         }
-      }
-
-      return null;
+   public static final METRIC_TYPES getEnum(String text) {
+       try {
+           return Utilities.METRIC_TYPES.valueOf(text.toUpperCase());
+       } catch (Exception e) {
+           return null;
+       }
    }
 
    /**
