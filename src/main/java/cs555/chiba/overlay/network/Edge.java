@@ -1,5 +1,6 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.util.Utilities;
 
 import java.util.ArrayList;
@@ -87,22 +88,26 @@ public class Edge {
       List<String> columns = new ArrayList<>();
       columns.add(Integer.toString(this.getFirst().getId()));
       columns.add(this.getFirst().getName().getIdentityKey());
+      columns.add(Integer.toString(this.getFirst().getDeviceCount()));
       columns.add(Integer.toString(this.getSecond().getId()));
       columns.add(this.getSecond().getName().getIdentityKey());
+      columns.add(Integer.toString(this.getSecond().getDeviceCount()));
       columns.add(this.getCost().toString());
 
       return String.join(",", columns);
    }
 
    public static Edge fromCsv(String[] columns) {
-      Integer firstId = Integer.parseInt(columns[0]);
+      int firstId = Integer.parseInt(columns[0]);
       Identity firstIdent = Identity.builder().withIdentityKey(columns[1]).build();
-      Integer secondId = Integer.parseInt(columns[2]);
-      Identity secondIdent = Identity.builder().withIdentityKey(columns[3]).build();
-      Integer cost = Integer.parseInt(columns[4]);
+      int firstCount = Integer.parseInt(columns[2]);
+      int secondId = Integer.parseInt(columns[3]);
+      Identity secondIdent = Identity.builder().withIdentityKey(columns[4]).build();
+      int secondCount = Integer.parseInt(columns[5]);;
+      Integer cost = Integer.parseInt(columns[6]);
 
-      Vertex first = new Vertex(firstId, firstIdent);
-      Vertex second = new Vertex(secondId, secondIdent);
+      Vertex first = new Vertex(firstId, firstIdent, firstCount);
+      Vertex second = new Vertex(secondId, secondIdent, secondCount);
       return Edge.builder().withFirst(first).withSecond(second).withCost(cost).build();
    }
 

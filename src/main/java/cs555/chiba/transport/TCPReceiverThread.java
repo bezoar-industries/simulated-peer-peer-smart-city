@@ -10,16 +10,21 @@ package cs555.chiba.transport;
 
 import java.io.*;
 import java.net.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import cs555.chiba.wireformats.EventFactory;
 
 
-public class TCPRecieverThread implements Runnable{
+public class TCPReceiverThread implements Runnable, AutoCloseable {
+    private static final Logger logger = Logger.getLogger(TCPReceiverThread.class.getName());
+
     private Socket socket;
     private DataInputStream s_in;
     private EventFactory factory;
 
-    public TCPRecieverThread(Socket socket, EventFactory factory) throws IOException{
+
+    public TCPReceiverThread(Socket socket, EventFactory factory) throws IOException{
         this.socket = socket;
         this.s_in = new DataInputStream(socket.getInputStream());
         this.factory = factory;
@@ -37,9 +42,23 @@ public class TCPRecieverThread implements Runnable{
                 //Send the serialized message to be processed
                 factory.processMessage(response, socket);
             } catch (IOException e) {
-                System.out.println("TCPRecieverThread.run() " + e);
+                logger.log(Level.SEVERE, "TCPReceiverThread.run() ", e);
                 break;
             }
+        }
+        close();
+    }
+
+    /**
+     * Close the ReceiverSocket
+     */
+    @Override
+    public void close() {
+        try {
+            socket.close();
+            this.socket = null;
+        } catch (IOException e){
+            logger.log(Level.SEVERE, "Failed to Close", e);
         }
     }
 }

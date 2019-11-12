@@ -13,16 +13,21 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import cs555.chiba.wireformats.EventFactory;
 
 
-public class TCPServerThread implements Runnable{
+public class TCPServerThread implements Runnable, AutoCloseable {
+    private static final Logger logger = Logger.getLogger(TCPServerThread.class.getName());
+
     private ServerSocket server;
     private TCPConnectionsCache connections;
     private EventFactory factory;
     private int port;
     private InetAddress addr;
+    private boolean dead = false;
 
 
 	@SuppressWarnings("static-access")
@@ -32,34 +37,40 @@ public class TCPServerThread implements Runnable{
             this.addr = server.getInetAddress().getLocalHost();
             this.port = server.getLocalPort();
         } catch (IOException e){
-            System.out.println("TCPServerThread() " + e);
+            logger.log(Level.SEVERE, "TCPServerThread() ", e);
         }
         this.connections = connections;
         this.factory = factory;
     }
 
     public void run() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted() && !this.dead) {
             try {
                 //Wait for incoming connection. Add receiver to the cache when one comes in
                 Socket socket = server.accept();
-                Thread recieverThread = new Thread(new TCPRecieverThread(socket, factory));
-                connections.addRecieverThread(recieverThread);
-                recieverThread.start();
+                Thread receiverThread = new Thread(new TCPReceiverThread(socket, factory));
+                connections.addReceiverThread(receiverThread);
+                receiverThread.start();
             } catch (IOException e){
-                System.out.println("TCPServerThread.run() " + e);
+                if (!this.dead) {
+                    logger.log(Level.SEVERE, "TCPServerThread.run() ", e);
+                }
             }
         }
+        close();
     }
 
     /**
      * Close the ServerSocket
      */
+    @Override
     public void close() {
         try {
+            this.dead = true;
             server.close();
+            connections.close();
         } catch (IOException e){
-            System.out.println(e);
+            logger.log(Level.SEVERE, "Failed to Close", e);
         }
     }
 

@@ -1,5 +1,6 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.util.Utilities;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -128,16 +129,16 @@ public class TestNetworkMap {
    public List<Vertex> createVerticesList() {
       List<Vertex> vertices = new ArrayList<Vertex>();
 
-      vertices.add(new Vertex(0, createIdentity("albany")));
-      vertices.add(new Vertex(1, createIdentity("annapolis")));
-      vertices.add(new Vertex(2, createIdentity("atlanta")));
-      vertices.add(new Vertex(3, createIdentity("augusta")));
-      vertices.add(new Vertex(4, createIdentity("austin")));
-      vertices.add(new Vertex(5, createIdentity("baton-rouge")));
-      vertices.add(new Vertex(6, createIdentity("bismarck")));
-      vertices.add(new Vertex(7, createIdentity("boise")));
-      vertices.add(new Vertex(8, createIdentity("boston")));
-      vertices.add(new Vertex(9, createIdentity("carson-city")));
+      vertices.add(new Vertex(0, createIdentity("albany"), 3));
+      vertices.add(new Vertex(1, createIdentity("annapolis"), 18));
+      vertices.add(new Vertex(2, createIdentity("atlanta"), 24));
+      vertices.add(new Vertex(3, createIdentity("augusta"), 14));
+      vertices.add(new Vertex(4, createIdentity("austin"), 5));
+      vertices.add(new Vertex(5, createIdentity("baton-rouge"), 13));
+      vertices.add(new Vertex(6, createIdentity("bismarck"), 22));
+      vertices.add(new Vertex(7, createIdentity("boise"), 14));
+      vertices.add(new Vertex(8, createIdentity("boston"), 8));
+      vertices.add(new Vertex(9, createIdentity("carson-city"), 28));
 
       return vertices;
    }

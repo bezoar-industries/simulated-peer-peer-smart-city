@@ -1,8 +1,9 @@
-package cs555.chiba.overlay.network;
+package cs555.chiba.service;
 
 import cs555.chiba.util.Utilities;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /**
  * @author mmuller
@@ -140,6 +141,11 @@ public class Identity {
          return this;
       }
 
+      public Builder withSocketAddress(SocketAddress socketAddress) {
+         this.socketAddress = (InetSocketAddress) socketAddress;
+         return this;
+      }
+
       public Identity build() {
          fixMissingFields();
          Utilities.checkArgument(!Utilities.isBlank(this.identityKey), "Identity Key cannot be blank");
@@ -166,7 +172,7 @@ public class Identity {
             this.identityKey = this.host + ":" + this.port;
          }
          else if (this.socketAddress != null) {
-            this.identityKey = this.socketAddress.getHostString() + ";" + this.socketAddress.getPort();
+            this.identityKey = this.socketAddress.getHostString() + ":" + this.socketAddress.getPort();
          }
 
          Utilities.checkArgument(!Utilities.isBlank(this.identityKey), "Identity Key cannot be blank");

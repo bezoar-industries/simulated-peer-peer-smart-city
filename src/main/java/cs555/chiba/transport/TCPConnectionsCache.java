@@ -9,17 +9,21 @@
 
 package cs555.chiba.transport;
 
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-import cs555.chiba.transport.TCPSender;
+public class TCPConnectionsCache implements AutoCloseable{
+    private static final Logger logger = Logger.getLogger(TCPConnectionsCache.class.getName());
 
-
-public class TCPConnectionsCache{
-    private ArrayList<Thread> recieverThreads = new ArrayList<>();
-    private ConcurrentHashMap<UUID,TCPSender> senders = new ConcurrentHashMap<UUID,TCPSender>();
+    private ArrayList<Thread> receiverThreads = new ArrayList<>();
+    private ConcurrentHashMap<UUID,TCPSender> senders = new ConcurrentHashMap<>();
 
     private UUID registryID;
 
@@ -31,8 +35,6 @@ public class TCPConnectionsCache{
      * @param sender A reference to the sender object
      */
     public TCPConnectionsCache(TCPSender sender){
-        Thread senderThread = new Thread(sender);
-        senderThread.start();
         this.registryID = UUID.nameUUIDFromBytes("registry".getBytes());
         this.addSender(sender, registryID);
     }
@@ -41,8 +43,8 @@ public class TCPConnectionsCache{
      * Adds a receiver thread to the cache
      * @param t A receiver thread
      */
-    public synchronized void addRecieverThread(Thread t){
-        recieverThreads.add(t);
+    public synchronized void addReceiverThread(Thread t){
+        receiverThreads.add(t);
     }
 
     /**
@@ -73,8 +75,7 @@ public class TCPConnectionsCache{
     public TCPSender getRandomSender() {
     	Random generator = new Random();
     	Object[] values = senders.values().toArray();
-    	TCPSender randomSender = (TCPSender) values[generator.nextInt(values.length)];
-    	return randomSender;
+    	return (TCPSender) values[generator.nextInt(values.length)];
     }
 
     /**
@@ -96,16 +97,15 @@ public class TCPConnectionsCache{
     /**
      * Send a message to the sender with the given ID
      * @param ID The ID of the recipient
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void send(UUID ID, byte[] message){
         senders.get(ID).addMessage(message);
     }
     
     /**
-     * Send a message to the sender with the given ID
-     * @param ID The ID of the recipient
-     * @param m The serialized message to be sent
+     * Send a message a random sender
+     * @param message The serialized message to be sent
      */
     public void sendToRandom(byte[] message){
     	getRandomSender().addMessage(message);
@@ -113,8 +113,8 @@ public class TCPConnectionsCache{
     
     /**
      * Send a message to the sender with the given ID
-     * @param ID The ID of the recipient
-     * @param m The serialized message to be sent
+     * @param exclude The ID of the excluded recipient
+     * @param message The serialized message to be sent
      */
     public void sendToRandom(byte[] message, UUID exclude){
     	Random generator = new Random();
@@ -131,8 +131,7 @@ public class TCPConnectionsCache{
     
     /**
      * Convenience to send a message over every connection in the cache
-     * except the registry
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void sendAll(byte[] message){
         for (UUID key : senders.keySet()) {
@@ -144,7 +143,7 @@ public class TCPConnectionsCache{
     /**
      * Convenience to send a message over every connection in the cache
      * except the registry
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void sendAll(byte[] message, UUID exclude){
         for (UUID key : senders.keySet()) {
@@ -155,9 +154,19 @@ public class TCPConnectionsCache{
 
     /**
      * Convenience to send a message to the registry
-     * @param m The serialized message to be sent
+     * @param message The serialized message to be sent
      */
     public void send(byte[] message){
         senders.get(registryID).addMessage(message);
+    }
+
+    public List<String> listConnections() {
+       return senders.values().stream().map(TCPSender::getSocket).map(Socket::getRemoteSocketAddress).map(socketAddress -> ((InetSocketAddress) socketAddress).getHostName()).collect(Collectors.toList());
+    }
+
+    @Override
+    public void close() {
+        this.receiverThreads.forEach(Thread::interrupt);
+        this.senders.values().forEach(TCPSender::close);
     }
 }

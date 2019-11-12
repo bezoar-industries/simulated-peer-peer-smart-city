@@ -1,9 +1,12 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.service.Identity;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -16,12 +19,14 @@ public class Vertex {
 
    private final int id; // the ordered id used ensure we don't repeat our messages to the nodes
    private final Identity name; // the message node this vertex represents
-   private Map<Vertex, Integer> edges; // the cost of traversing an edge
+   private final Map<Vertex, Integer> edges; // the cost of traversing an edge
+   private final int deviceCount;
 
-   public Vertex(int id, Identity name) {
+   public Vertex(int id, Identity name, int deviceCount) {
       this.id = id;
       this.name = name;
       this.edges = new HashMap<Vertex, Integer>();
+      this.deviceCount = deviceCount;
    }
 
    public int getId() {
@@ -34,6 +39,10 @@ public class Vertex {
 
    public Map<Vertex, Integer> getEdges() {
       return this.edges;
+   }
+
+   public int getDeviceCount() {
+      return deviceCount;
    }
 
    /**
@@ -85,38 +94,20 @@ public class Vertex {
    }
 
    // can't use edges in the equals because it links back to itself
-   @Override
-   public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + id;
-      result = prime * result + ((name == null) ? 0 : name.hashCode());
-      return result;
-   }
-
-   @Override
-   public boolean equals(Object obj) {
-      if (this == obj)
+   @Override public boolean equals(Object o) {
+      if (this == o)
          return true;
-      if (obj == null)
+      if (o == null || getClass() != o.getClass())
          return false;
-      if (getClass() != obj.getClass())
-         return false;
-      Vertex other = (Vertex) obj;
-      if (id != other.id)
-         return false;
-      if (name == null) {
-         if (other.name != null)
-            return false;
-      }
-      else if (!name.equals(other.name))
-         return false;
-      return true;
+      Vertex vertex = (Vertex) o;
+      return id == vertex.id && deviceCount == vertex.deviceCount && Objects.equals(name, vertex.name);
    }
 
-   @Override
-   public String toString() {
-      return "Vertex [id=" + id + ", name=" + name + ", edges=" + edges.keySet().stream().map(v -> v.getName().getHost()).collect(Collectors.joining(",")) + "]";
+   @Override public int hashCode() {
+      return Objects.hash(id, name, deviceCount);
    }
 
+   @Override public String toString() {
+      return "Vertex{" + "id=" + id + ", name=" + name + ", edges=" + edges.keySet().stream().map(v -> v.getName().getHost()).collect(Collectors.joining(",")) + ", deviceCount=" + deviceCount + '}';
+   }
 }

@@ -11,10 +11,13 @@ package cs555.chiba.transport;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+public class TCPSender implements Runnable, AutoCloseable {
+	private static final Logger logger = Logger.getLogger(TCPSender.class.getName());
 
-public class TCPSender implements Runnable {
-    private Socket socket;
+	private Socket socket;
     private DataOutputStream s_out;
     private LinkedBlockingQueue<byte[]> messageQueue;
 
@@ -45,14 +48,13 @@ public class TCPSender implements Runnable {
 	            s_out.write(message, 0, size);
 	            s_out.flush();
 	        } catch (IOException e) {
-	            System.out.println("TCPSender.sendMessage() " + e);
-	            e.printStackTrace();
+				  logger.log(Level.SEVERE, "TCPSender.sendMessage() ", e);
 	        }
     	}
     }
 
     public void run(){
-        while (socket != null) {
+        while (!Thread.currentThread().isInterrupted() && socket != null) {
         	byte[] nextMessage;
 			try {
 				//Block until there are messages in the queue
@@ -61,7 +63,8 @@ public class TCPSender implements Runnable {
 	                sendMessage(nextMessage);
 	            }
 			} catch (InterruptedException e) {
-				System.out.println("TCPSender.run(): " + e);
+				logger.log(Level.SEVERE, "TCPSender.run(): ", e);
+				close();
 			}
         }
     }
@@ -69,11 +72,13 @@ public class TCPSender implements Runnable {
     /**
      * Close the socket
      */
+    @Override
     public void close() {
     	try {
 			this.socket.close();
+			this.socket = null;
 		} catch (IOException e) {
-			 System.out.println("TCPSender.close() " + e);
+			 logger.log(Level.SEVERE, "TCPSender.close() ", e);
 		}
     }
 

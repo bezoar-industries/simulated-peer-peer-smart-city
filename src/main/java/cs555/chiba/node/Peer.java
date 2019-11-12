@@ -9,34 +9,40 @@
 
 package cs555.chiba.node;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.UUID;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
 import cs555.chiba.iotDevices.*;
+import cs555.chiba.service.Identity;
 import cs555.chiba.transport.TCPConnectionsCache;
-import cs555.chiba.transport.TCPRecieverThread;
+import cs555.chiba.transport.TCPReceiverThread;
 import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
 import cs555.chiba.util.LRUCache;
 import cs555.chiba.util.Metric;
+import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
-import cs555.chiba.wireformats.SampleMessage;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipData;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.RandomWalk;
+import cs555.chiba.wireformats.SampleMessage;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Peer implements Node {
-	private Thread icp;
+   private static final Logger logger = Logger.getLogger(Peer.class.getName());
+
+   private Thread icp;
 	private TCPServerThread server;
 	private EventFactory eventFactory;
     private TCPConnectionsCache connections;
@@ -59,18 +65,21 @@ public class Peer implements Node {
         this.icp.start();
         queryIDCache = new LRUCache(1000);
         gossipCache = new LRUCache(1000);
-        metrics = new HashMap<UUID, Metric>();
+        metrics = new HashMap<>();
+
+
+        Identity whoAmI = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
 
         try {
             //Connect to registry and start thread
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
             this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
-            Thread registryThread = new Thread(new TCPRecieverThread(registrySocket, eventFactory));
-            this.connections.addRecieverThread(registryThread);
+            Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
+            this.connections.addReceiverThread(registryThread);
             registryThread.start();
         } catch (IOException e){
-            System.out.println("Peer() " + e);
+           logger.log(Level.SEVERE, "Peer() ", e);
         }
 
         //Start a server socket so we can receive incoming connections
@@ -79,9 +88,11 @@ public class Peer implements Node {
         this.myAddr = server.getAddr();
         this.serverThread = new Thread(server);
         serverThread.start();
-        byte[] m = new SampleMessage(0).getBytes();
-        //Send to registry
-        connections.send(m); 
+
+        byte[] m = new SampleMessage(id).getBytes();
+
+        //Send registration
+        connections.send(m);
     }
 
     private void createIotNetwork(int numberOfIoTDevices) {
@@ -197,7 +208,7 @@ public class Peer implements Node {
      * @param e The SampleMessage
      */
     public void SampleMessage(SampleMessage e){
-        System.out.println("Recieved sample message with num: "+e.getNum());
+        logger.info("Recieved sample message with num: "+e.getNum());
     }
     
     /**
@@ -297,7 +308,7 @@ public class Peer implements Node {
      * A method to be called by the InteractiveCommandParser
      */
     public void sampleCommand() {
-    	System.out.println("This is a sample command");
+       logger.info("This is a sample command");
     }
 	
     /**
@@ -306,9 +317,9 @@ public class Peer implements Node {
      */
 	public static void main(String[] args) {
 		try {
-			new Peer(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), 0);
+         parseArguments(args);
 		} catch (UnknownHostException e){
-			System.out.println("Peer.main() " + e);
+			logger.log(Level.SEVERE, "Peer.main() ", e);
 		}
         try {
         	//Idle - maybe add an "exit" command in the ICP?
@@ -316,4 +327,17 @@ public class Peer implements Node {
         } catch (InterruptedException e){ }
 
 	}
+
+   private static Peer parseArguments(String[] args) throws UnknownHostException {
+
+      if (!Utilities.checkArgCount(3, args)) {
+         throw new IllegalArgumentException("Peer Node requires 4 arguments:  registry-host registry-port iot-count");
+      }
+
+      InetAddress addr = InetAddress.getByName(args[0]);
+      int port = Utilities.parsePort(args[1]);
+      int iotCount = Integer.parseInt(args[2]);
+
+      return new Peer(addr, port, iotCount);
+   }
 }
