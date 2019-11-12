@@ -9,6 +9,18 @@
 
 package cs555.chiba.node;
 
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+
+
 import cs555.chiba.iotDevices.*;
 import cs555.chiba.service.Identity;
 import cs555.chiba.transport.TCPConnectionsCache;
@@ -16,10 +28,19 @@ import cs555.chiba.transport.TCPReceiverThread;
 import cs555.chiba.transport.TCPSender;
 import cs555.chiba.transport.TCPServerThread;
 import cs555.chiba.util.InteractiveCommandParser;
+
 import cs555.chiba.util.Utilities;
+
+import cs555.chiba.util.LRUCache;
+import cs555.chiba.util.Metric;
+
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
 import cs555.chiba.wireformats.SampleMessage;
+import cs555.chiba.wireformats.Flood;
+import cs555.chiba.wireformats.GossipData;
+import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.RandomWalk;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -41,25 +62,32 @@ public class Peer implements Node {
     private int myPort;
     private InetAddress myAddr;
     private Thread serverThread;
-    private int id;
+    private UUID id;
+    private LRUCache queryIDCache;
+    private LRUCache gossipCache;
+    private HashMap<UUID, Metric> metrics;
     private List<IotDevice> connectedIotDevices;
 
-	public Peer(InetAddress registryHost, int registryPort, int id, int numberOfIoTDevices){
+	public Peer(InetAddress registryHost, int registryPort, int numberOfIoTDevices){
 		//Set-up activities - get the event factory, create the ICP
+		this.id = UUID.randomUUID();
         this.eventFactory = EventFactory.getInstance(this);
         this.createIotNetwork(numberOfIoTDevices);
 
         this.icp = new Thread(new InteractiveCommandParser(this));
         this.icp.start();
+        queryIDCache = new LRUCache(1000);
+        gossipCache = new LRUCache(1000);
+        metrics = new HashMap<>();
 
 
-      Identity whoAmI = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
+        Identity whoAmI = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
 
         try {
             //Connect to registry and start thread
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
-            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket), whoAmI);
+            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
             Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
             this.connections.addReceiverThread(registryThread);
             registryThread.start();
@@ -197,15 +225,99 @@ public class Peer implements Node {
     }
     
     /**
+     * A handler for Flood messages
+     * @param e The Flood message
+     */
+    public void Flood(Flood e){
+    	if(queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - ignore it
+    		queryIDCache.putEntry(e.getID(), e.getSenderID());
+    		return;
+    	}
+    	
+        System.out.println("Recieved flood message with ID: "+e.getID());
+        queryIDCache.putEntry(e.getID(), e.getSenderID());
+        //Check if queried data is here - if so, log appropriately
+        metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+        
+        if(e.getCurrentHop()+1 < e.getHopLimit() || e.getHopLimit() == -1) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	connections.sendAll(m, e.getSenderID());
+        }
+    }
+    
+    /**
+     * A handler for RandomWalk messages
+     * @param e The RandomWalk message
+     */
+    public void RandomWalk(RandomWalk e) {
+    	if(!queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - don't process it again (but still forward it)
+    		System.out.println("Recieved random walk message with ID: "+e.getID());
+    		//Check if queried data is here - if so, log appropriately
+    		metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+    	}
+    	queryIDCache.putEntry(e.getID(), e.getSenderID());
+       
+        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	connections.sendToRandom(m, e.getSenderID());
+        }
+    }
+    
+    private void GossipData(GossipData e) {
+    	boolean updated = false;
+    	System.out.println("Recieved gossip query from: "+e.getSenderID());
+		for(String device : e.getDevices()) {
+			if(gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(device.getBytes()), device, e.getSenderID()))
+				updated = true;
+		}
+		if (updated) {
+			byte[] m = new GossipData(id, gossipCache.getValueLists()).getBytes();
+			connections.sendAll(m, e.getSenderID());
+		}
+	}
+    
+    private void GossipQuery(GossipQuery e) {
+    	if(queryIDCache.containsEntry(e.getID())) {
+    		//We've already processed this query - ignore it
+    		queryIDCache.putEntry(e.getID(), e.getSenderID());
+    		return;
+    	}
+    	
+        System.out.println("Recieved gossip message with ID: "+e.getID());
+        queryIDCache.putEntry(e.getID(), e.getSenderID());
+        //Check if queried data is here - if so, log appropriately
+        metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+        
+        if(e.getCurrentHop()+1 < e.getHopLimit()) {
+        	//If the message hasn't yet hit its hop limit
+        	byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop()+1, e.getHopLimit()).getBytes();
+        	if(gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
+	        	for(UUID targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
+	        		if(targetID != e.getSenderID())
+	        			connections.send(targetID, m);
+	        	}
+        	}
+        }
+	}
+    
+    /**
      * Routes messages to the correct handler
      * @param e The message that must be handled
      */
     @Override
     public void onEvent(Event e){
         if (e instanceof SampleMessage){ SampleMessage((SampleMessage)e); }
+        else if (e instanceof Flood){ Flood((Flood)e); }
+        else if (e instanceof RandomWalk){ RandomWalk((RandomWalk)e); }
+        else if (e instanceof GossipData){ GossipData((GossipData)e); }
+        else if (e instanceof GossipQuery){ GossipQuery((GossipQuery)e); }
     }
-    
-    /**
+
+	/**
      * A method to be called by the InteractiveCommandParser
      */
     public void sampleCommand() {
@@ -214,7 +326,7 @@ public class Peer implements Node {
 	
     /**
      * Creates a new Peer, then idles until exit
-     * @param args The IP address of the registry, the port of the registry, and this Peer's ID
+     * @param args The IP address of the registry and the port of the registry
      */
 	public static void main(String[] args) {
 		try {
@@ -231,16 +343,14 @@ public class Peer implements Node {
 
    private static Peer parseArguments(String[] args) throws UnknownHostException {
 
-      if (!Utilities.checkArgCount(4, args)) {
-         throw new IllegalArgumentException("Peer Node requires 4 arguments:  registry-host registry-port peer-id iot-count");
+      if (!Utilities.checkArgCount(3, args)) {
+         throw new IllegalArgumentException("Peer Node requires 4 arguments:  registry-host registry-port iot-count");
       }
 
       InetAddress addr = InetAddress.getByName(args[0]);
       int port = Utilities.parsePort(args[1]);
-      Identity registry = Identity.builder().withHost(InetAddress.getLocalHost().getHostAddress()).withPort(port).build();
-      int id = Integer.parseInt(args[2]);
-      int iotCout = Integer.parseInt(args[3]);
+      int iotCount = Integer.parseInt(args[2]);
 
-      return new Peer(addr, port, id, iotCout);
+      return new Peer(addr, port, iotCount);
    }
 }

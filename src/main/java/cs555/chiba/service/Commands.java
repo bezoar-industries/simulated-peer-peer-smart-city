@@ -46,7 +46,7 @@ public class Commands {
    private static String listConnections() {
       StringBuffer out = new StringBuffer("Connections in the Pool: \n");
       ServiceNode.getThisNode().getTcpConnectionsCache().listConnections().forEach(ident -> {
-         out.append(ident.getIdentityKey()).append("\n");
+         out.append(ident).append("\n");
       });
 
       return out.toString();
