@@ -47,7 +47,6 @@ public class Peer implements Node {
     private LRUCache queryIDCache;
     private LRUCache gossipCache;
     private HashMap<UUID, Metric> metrics;
-    private int id;
     private List<IotDevice> connectedIotDevices;
 
 	public Peer(InetAddress registryHost, int registryPort, int numberOfIoTDevices){

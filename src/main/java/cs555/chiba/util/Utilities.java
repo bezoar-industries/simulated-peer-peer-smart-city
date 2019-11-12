@@ -27,6 +27,11 @@ import java.util.stream.Collectors;
 
 public class Utilities {
 
+   public enum METRIC_TYPES {POWER_CONSUPMTION, POWER_STATE, AIR_QUALITY, TEMPERATURE, THROTTLE_STATE, BATTERY_PERCENTAGE, CURRENT_TIME, TIME_SINCE_LAST_SYNC, LOCK_STATE,
+                                INSIDE_TEMPERATURE, OPEN_STATE, CURRENT_CYCLE_STEP, LIGHT_STATUS, HOUSE_POWER_STATUS, FRIDGE_TEMPERATURE, FREEZER_TEMPERATURE, ICE_LEVEL,
+                                RECORD_HIGH, RECORD_LOW, SET_TEMPERATURE, TIME_TO_NEXT_TERMPERATURE_CHANGE, CPU_USAGE, MEMORY_USAGE, NETFLIX, AMAZON_PRIME, HEART_RATE,
+                                CURRENT_LEAK, };
+
    private static final Logger logger = Logger.getLogger(Utilities.class.getName());
 
    /**
