@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class Flood implements Event{
 
-    private final int type = Protocol.FLOOD;
+    private final int type = Protocol.FLOOD.ordinal();
     private final int SIZE_OF_INT = 4;
     private UUID ID;
     private UUID senderID;

@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class RandomWalk implements Event{
 
-    private final int type = Protocol.RANDOM_WALK;
+    private final int type = Protocol.RANDOM_WALK.ordinal();
     private final int SIZE_OF_INT = 4;
     private UUID ID;
     private UUID senderID;

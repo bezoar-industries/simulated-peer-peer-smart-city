@@ -24,7 +24,9 @@ import cs555.chiba.wireformats.EventFactory;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipData;
 import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.IntroductionMessage;
 import cs555.chiba.wireformats.RandomWalk;
+import cs555.chiba.wireformats.RegisterMessage;
 import cs555.chiba.wireformats.SampleMessage;
 
 import java.io.IOException;
@@ -55,7 +57,7 @@ public class Peer implements Node {
     private HashMap<UUID, Metric> metrics;
     private List<IotDevice> connectedIotDevices;
 
-	public Peer(InetAddress registryHost, int registryPort, int numberOfIoTDevices){
+	public Peer(InetAddress registryHost, int registryPort, int numberOfIoTDevices) throws IOException {
 		//Set-up activities - get the event factory, create the ICP
 		this.id = UUID.randomUUID();
         this.eventFactory = EventFactory.getInstance(this);
@@ -67,16 +69,14 @@ public class Peer implements Node {
         gossipCache = new LRUCache(1000);
         metrics = new HashMap<>();
 
-
-        Identity whoAmI = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
-
         try {
             //Connect to registry and start thread
         	Socket registrySocket = new Socket(registryHost, registryPort);
             //add registry to connections cache - we will want to always keep this connection open
             this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
             Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
-            this.connections.addReceiverThread(registryThread);
+           Identity registry = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
+           this.connections.addReceiverThread(registry, registryThread);
             registryThread.start();
         } catch (IOException e){
            logger.log(Level.SEVERE, "Peer() ", e);
@@ -89,7 +89,8 @@ public class Peer implements Node {
         this.serverThread = new Thread(server);
         serverThread.start();
 
-        byte[] m = new SampleMessage(id).getBytes();
+      Identity whoAmI = Identity.builder().withHost(this.myAddr.getHostName()).withPort(this.myPort).build();
+      byte[] m = new RegisterMessage(whoAmI, id).getBytes();
 
         //Send registration
         connections.send(m);
@@ -290,21 +291,40 @@ public class Peer implements Node {
         	}
         }
 	}
-    
-    /**
-     * Routes messages to the correct handler
-     * @param e The message that must be handled
-     */
-    @Override
-    public void onEvent(Event e){
-        if (e instanceof SampleMessage){ SampleMessage((SampleMessage)e); }
-        else if (e instanceof Flood){ Flood((Flood)e); }
-        else if (e instanceof RandomWalk){ RandomWalk((RandomWalk)e); }
-        else if (e instanceof GossipData){ GossipData((GossipData)e); }
-        else if (e instanceof GossipQuery){ GossipQuery((GossipQuery)e); }
-    }
 
-	/**
+   /**
+    * Routes messages to the correct handler
+    * @param e The message that must be handled
+    */
+   @Override public void onEvent(Event e) {
+      if (e instanceof SampleMessage) {
+         SampleMessage((SampleMessage) e);
+      }
+      else if (e instanceof Flood) {
+         Flood((Flood) e);
+      }
+      else if (e instanceof RandomWalk) {
+         RandomWalk((RandomWalk) e);
+      }
+      else if (e instanceof GossipData) {
+         GossipData((GossipData) e);
+      }
+      else if (e instanceof GossipQuery) {
+         GossipQuery((GossipQuery) e);
+      }
+      else if (e instanceof IntroductionMessage) {
+         handle((IntroductionMessage) e);
+      }
+      else {
+         logger.severe("Cannot handle message [" + e.getClass().getSimpleName() + "]");
+      }
+   }
+
+   private void handle(IntroductionMessage message) {
+      this.connections.addConnection(message.getIdentity().getHost(), message.getIdentity().getPort(), message.getUuid(), this.eventFactory);
+   }
+
+   /**
      * A method to be called by the InteractiveCommandParser
      */
     public void sampleCommand() {
@@ -318,17 +338,13 @@ public class Peer implements Node {
 	public static void main(String[] args) {
 		try {
          parseArguments(args);
-		} catch (UnknownHostException e){
+         Thread.currentThread().join();
+		} catch (Exception e){
 			logger.log(Level.SEVERE, "Peer.main() ", e);
 		}
-        try {
-        	//Idle - maybe add an "exit" command in the ICP?
-            Thread.currentThread().join();
-        } catch (InterruptedException e){ }
-
 	}
 
-   private static Peer parseArguments(String[] args) throws UnknownHostException {
+   private static Peer parseArguments(String[] args) throws IOException {
 
       if (!Utilities.checkArgCount(3, args)) {
          throw new IllegalArgumentException("Peer Node requires 4 arguments:  registry-host registry-port iot-count");

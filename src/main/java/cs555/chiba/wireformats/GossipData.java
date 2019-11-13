@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class GossipData implements Event{
 
-    private final int type = Protocol.GOSSIP_DATA;
+    private final int type = Protocol.GOSSIP_DATA.ordinal();
     private final int SIZE_OF_INT = 4;
     private UUID senderID;
     private String[] devices;

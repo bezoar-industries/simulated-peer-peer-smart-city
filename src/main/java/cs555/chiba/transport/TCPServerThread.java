@@ -11,11 +11,13 @@ package cs555.chiba.transport;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import cs555.chiba.service.Identity;
 import cs555.chiba.wireformats.EventFactory;
 
 
@@ -48,8 +50,9 @@ public class TCPServerThread implements Runnable, AutoCloseable {
             try {
                 //Wait for incoming connection. Add receiver to the cache when one comes in
                 Socket socket = server.accept();
+                Identity ident = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
                 Thread receiverThread = new Thread(new TCPReceiverThread(socket, factory));
-                connections.addReceiverThread(receiverThread);
+                connections.addReceiverThread(ident, receiverThread);
                 receiverThread.start();
             } catch (IOException e){
                 if (!this.dead) {

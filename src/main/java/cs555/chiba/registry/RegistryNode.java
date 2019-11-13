@@ -4,12 +4,12 @@ import cs555.chiba.service.Identity;
 import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
+import cs555.chiba.wireformats.RegisterMessage;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 public class RegistryNode extends ServiceNode {
 
@@ -38,6 +38,8 @@ public class RegistryNode extends ServiceNode {
       return new RegistryNode(ident);
    }
 
+   private final RegisteredPeers registry = new RegisteredPeers();
+
    public RegistryNode(Identity ident) {
       super();
       setIdentity(ident);
@@ -45,5 +47,21 @@ public class RegistryNode extends ServiceNode {
 
    @Override public void onEvent(Event event) {
       logger.info("We got a message! [" + event + "]");
+      {
+         if (event instanceof RegisterMessage) {
+            handle((RegisterMessage) event);
+         }
+         else {
+            logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
+         }
+      }
+   }
+
+   private void handle(RegisterMessage event) {
+      this.registry.register(event);
+   }
+
+   public RegisteredPeers getRegistry() {
+      return registry;
    }
 }

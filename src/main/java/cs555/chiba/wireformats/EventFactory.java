@@ -9,6 +9,7 @@
 
 package cs555.chiba.wireformats;
 
+import java.io.IOException;
 import java.net.Socket;
 
 import cs555.chiba.node.Node;
@@ -44,11 +45,17 @@ public class EventFactory {
      * @param message The serialized message to be routed
      * @param socket The socket that the message was received over
      */
-    public void processMessage(byte[] message, Socket socket) {
-        int type = message[0];
+    public void processMessage(byte[] message, Socket socket) throws IOException {
+        Protocol type = Protocol.values()[message[0]];
         switch (type) {
-            case Protocol.SAMPLE_MESSAGE:
+            case SAMPLE_MESSAGE:
                 this.n.onEvent(new SampleMessage(message, socket));
+                break;
+            case INTRODUCTION:
+                this.n.onEvent(new IntroductionMessage(message));
+                break;
+            case REGISTER:
+                this.n.onEvent(new RegisterMessage(message));
                 break;
             default:
                 System.out.println("Unrecognised message type");
