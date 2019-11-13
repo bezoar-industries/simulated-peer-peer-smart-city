@@ -172,7 +172,7 @@ public class Identity {
             this.identityKey = this.host + ":" + this.port;
          }
          else if (this.socketAddress != null) {
-            this.identityKey = this.socketAddress.getHostString() + ":" + this.socketAddress.getPort();
+            this.identityKey = this.socketAddress.getHostName() + ":" + this.socketAddress.getPort();
          }
 
          Utilities.checkArgument(!Utilities.isBlank(this.identityKey), "Identity Key cannot be blank");

@@ -18,7 +18,7 @@ import java.util.UUID;
 
 public class SampleMessage implements Event{
 
-    private final int type = Protocol.SAMPLE_MESSAGE;
+    private final int type = Protocol.SAMPLE_MESSAGE.ordinal();
     private UUID id;
     private Socket socket;
 

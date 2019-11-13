@@ -26,7 +26,7 @@ class RegistryCommands {
     */
    private static String listPeers() {
       StringBuffer out = new StringBuffer("Registered Peers: \n");
-      ServiceNode.getThisNode().getTcpConnectionsCache().listConnections().forEach(ident -> {
+      ServiceNode.getThisNode(RegistryNode.class).getRegistry().listRegisteredPeers().forEach(ident -> {
          out.append(ident).append("\n");
       });
 

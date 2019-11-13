@@ -8,9 +8,10 @@
 */
 package cs555.chiba.wireformats;
 
+import java.io.IOException;
 
 public interface Event {
-    byte[] getBytes();
+    byte[] getBytes() throws IOException;
 
     int getType();
 }
