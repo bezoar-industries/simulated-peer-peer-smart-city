@@ -13,6 +13,7 @@ import java.util.Scanner;
 
 import cs555.chiba.node.Peer;
 import cs555.chiba.node.Node;
+import cs555.chiba.registry.RegistryNode;
 
 
 public class InteractiveCommandParser implements Runnable{
@@ -30,13 +31,32 @@ public class InteractiveCommandParser implements Runnable{
         while(sc.hasNext()){
             String str = sc.nextLine();
             String[] tokens = str.split(" ");
-            
-            if (tokens[0].equals("sample-peer-command") && node instanceof Peer){
-                Peer n = (Peer)node;
-                n.sampleCommand();
-            } else {
-            	System.out.println("Unrecognized command");
+
+            if(node instanceof Peer) {
+                if (tokens[0].equals("sample-peer-command")){
+                    Peer n = (Peer)node;
+                    n.sampleCommand();
+                } else {
+                    System.out.println("Unrecognized command");
+                }
+            } else if (node instanceof RegistryNode) {
+                if (tokens[0].equals("random-walk") && tokens.length == 2){
+                    RegistryNode n = (RegistryNode)node;
+                    n.sendRandomWalkRequest(tokens[1]);
+                } else if (tokens[0].equals("gossip") && tokens.length == 2){
+                    RegistryNode n = (RegistryNode)node;
+                    n.sendGossipingRequest(tokens[1]);
+                } else if (tokens[0].equals("flood") && tokens.length == 2){
+                    RegistryNode n = (RegistryNode)node;
+                    n.sendFloodingRequest(tokens[1]);
+                } else if (tokens[0].equals("deep-learning") && tokens.length == 2){
+                    RegistryNode n = (RegistryNode)node;
+                    n.sendDeepLearningRequest(tokens[1]);
+                } else {
+                    System.out.println("Unrecognized command");
+                }
             }
+
         }
     }
 }

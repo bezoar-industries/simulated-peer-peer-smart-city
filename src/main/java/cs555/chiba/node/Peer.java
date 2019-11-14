@@ -44,7 +44,7 @@ import java.util.logging.Logger;
 public class Peer implements Node {
    private static final Logger logger = Logger.getLogger(Peer.class.getName());
 
-   private Thread icp;
+    private Thread icp;
 	private TCPServerThread server;
 	private EventFactory eventFactory;
     private TCPConnectionsCache connections;

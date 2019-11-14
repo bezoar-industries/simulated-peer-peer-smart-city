@@ -2,18 +2,25 @@ package cs555.chiba.registry;
 
 import cs555.chiba.service.Identity;
 import cs555.chiba.service.ServiceNode;
+import cs555.chiba.util.InteractiveCommandParser;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.RegisterMessage;
+import cs555.chiba.wireformats.Flood;
+import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.RandomWalk;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RegistryNode extends ServiceNode {
 
    private static final Logger logger = Logger.getLogger(RegistryNode.class.getName());
+
+   private Thread icp;
 
    public static void main(String[] args) {
       try {
@@ -43,6 +50,8 @@ public class RegistryNode extends ServiceNode {
    public RegistryNode(Identity ident) {
       super();
       setIdentity(ident);
+      this.icp = new Thread(new InteractiveCommandParser(this));
+      this.icp.start();
    }
 
    @Override public void onEvent(Event event) {
@@ -55,6 +64,25 @@ public class RegistryNode extends ServiceNode {
             logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
          }
       }
+   }
+
+   public void sendRandomWalkRequest(String metric) {
+      RandomWalk request = new RandomWalk(UUID.randomUUID(), null, metric, 0, 10);
+      this.getTcpConnectionsCache().sendToRandom(request.getBytes());
+   }
+
+   public void sendDeepLearningRequest(String metric) {
+      // TODO: use deep learning heuristic request
+   }
+
+   public void sendGossipingRequest(String metric) {
+      GossipQuery request = new GossipQuery(UUID.randomUUID(), null, metric, 0, 10);
+      this.getTcpConnectionsCache().sendToRandom(request.getBytes());
+   }
+
+   public void sendFloodingRequest(String metric) {
+      Flood request = new Flood(UUID.randomUUID(), null, metric, 0, 10);
+      this.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
    private void handle(RegisterMessage event) {
