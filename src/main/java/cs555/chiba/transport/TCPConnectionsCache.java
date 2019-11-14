@@ -45,6 +45,10 @@ public class TCPConnectionsCache implements AutoCloseable{
         this.addSender(sender, registryID);
     }
 
+    public UUID getRegistryID() {
+        return registryID;
+    }
+
     /**
      * Adds a receiver thread to the cache
      * @param t A receiver thread

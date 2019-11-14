@@ -67,7 +67,7 @@ public class RegistryNode extends ServiceNode {
    }
 
    public void sendRandomWalkRequest(String metric) {
-      RandomWalk request = new RandomWalk(UUID.randomUUID(), null, metric, 0, 10);
+      RandomWalk request = new RandomWalk(UUID.randomUUID(), this.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
       this.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
@@ -76,12 +76,12 @@ public class RegistryNode extends ServiceNode {
    }
 
    public void sendGossipingRequest(String metric) {
-      GossipQuery request = new GossipQuery(UUID.randomUUID(), null, metric, 0, 10);
+      GossipQuery request = new GossipQuery(UUID.randomUUID(), this.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
       this.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
    public void sendFloodingRequest(String metric) {
-      Flood request = new Flood(UUID.randomUUID(), null, metric, 0, 10);
+      Flood request = new Flood(UUID.randomUUID(), this.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
       this.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
