@@ -24,6 +24,7 @@ public class GossipQuery implements Event{
     private int hopLimit;
     private int currentHop;
     private Socket socket;
+    private int totalDevicesWithMetric = 0;
 
     /**
      * This constructor should be used when creating a message
@@ -63,6 +64,7 @@ public class GossipQuery implements Event{
         target = new String(targetBytes);
         currentHop = b.getInt();
         hopLimit = b.getInt();
+        totalDevicesWithMetric = b.getInt();
         this.socket = socket;
     }
 
@@ -74,7 +76,7 @@ public class GossipQuery implements Event{
     	byte[] IDbytes = ID.toString().getBytes();
     	byte[] senderIDbytes = senderID.toString().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+5*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+6*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
@@ -84,6 +86,7 @@ public class GossipQuery implements Event{
     	b.put(targetBytes);
     	b.putInt(currentHop);
     	b.putInt(hopLimit);
+    	b.putInt(totalDevicesWithMetric);
         return b.array();
     }
 
@@ -113,5 +116,13 @@ public class GossipQuery implements Event{
 
     public Socket getSocket() {
     	return socket;
+    }
+
+    public int getTotalDevicesWithMetric() {
+        return totalDevicesWithMetric;
+    }
+
+    public void setTotalDevicesWithMetric(int totalDevicesWithMetric) {
+        this.totalDevicesWithMetric = totalDevicesWithMetric;
     }
 }
