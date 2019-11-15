@@ -67,6 +67,10 @@ public class RegistryNode extends ServiceNode {
       return registry;
    }
 
+   public NetworkMap getNetworkMap() {
+      return networkMap;
+   }
+
    public String buildOverlay(int minConnections, int maxConnections) {
       this.networkMap = new NetworkMap(this.registry.listRegisteredPeers(), minConnections, maxConnections);
       return "Successfully Created.  Next step is building the cluster.";
