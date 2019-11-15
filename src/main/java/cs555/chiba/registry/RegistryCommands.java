@@ -5,6 +5,7 @@ import cs555.chiba.service.ServiceNode;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.RandomWalk;
+import cs555.chiba.util.Utilities;
 
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -12,13 +13,13 @@ import java.util.logging.Logger;
 /**
  * @author mmuller
  *
- * Available Discovery Node commands
+ * Available Registry Node commands
  */
 class RegistryCommands {
 
    private static final Logger logger = Logger.getLogger(RegistryCommands.class.getName());
 
-   static Commands getDiscoveryCommands(RegistryNode registryNode) {
+   static Commands getRegistryCommands(RegistryNode registryNode) {
       Commands.Builder builder = Commands.builder();
       builder.registerCommand("listpeers", args -> { // list all the registered nodes
          logger.info(listPeers());
@@ -37,6 +38,17 @@ class RegistryCommands {
 
       builder.registerCommand("flood", args -> { // list all the registered nodes
          sendGossipingRequest(args[0], registryNode);
+         return null;
+      });
+
+      builder.registerCommand("buildoverlay", args -> { // build a random overlay with the current peers
+         if (!Utilities.checkArgCount(2, args)) {
+            throw new IllegalArgumentException("Build Overlay requires 2 arguments:  min-connections-per-peer max-connections-per-peer");
+         }
+
+         int min = Utilities.quietlyParseInt(args[0], 1);
+         int max = Utilities.quietlyParseInt(args[1], 2);
+         logger.info(buildOverlay(min, max));
          return null;
       });
 
@@ -67,9 +79,18 @@ class RegistryCommands {
    private static String listPeers() {
       StringBuffer out = new StringBuffer("Registered Peers: \n");
       ServiceNode.getThisNode(RegistryNode.class).getRegistry().listRegisteredPeers().forEach(ident -> {
-         out.append(ident).append("\n");
+         out.append(ident.getIdentityKey()).append("\n");
       });
 
+      return out.toString();
+   }
+
+   /**
+    * Create an Overlay
+    */
+   private static String buildOverlay(int minConnections, int maxConnections) {
+      StringBuffer out = new StringBuffer("Building Overlay: \n");
+      out.append(ServiceNode.getThisNode(RegistryNode.class).buildOverlay(minConnections, maxConnections));
       return out.toString();
    }
 }

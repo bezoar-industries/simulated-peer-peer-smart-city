@@ -51,16 +51,15 @@ public class TCPServerThread implements Runnable, AutoCloseable {
                 //Wait for incoming connection. Add receiver to the cache when one comes in
                 Socket socket = server.accept();
                 Identity ident = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
-                Thread receiverThread = new Thread(new TCPReceiverThread(socket, factory));
-                connections.addReceiverThread(ident, receiverThread);
-                receiverThread.start();
-            } catch (IOException e){
+                connections.addReceiverThread(ident, new TCPReceiverThread(socket, factory));
+            } catch (Exception e){
                 if (!this.dead) {
                     logger.log(Level.SEVERE, "TCPServerThread.run() ", e);
                 }
             }
         }
         close();
+        logger.info("TCPServerThread Closed");
     }
 
     /**

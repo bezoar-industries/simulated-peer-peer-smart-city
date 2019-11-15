@@ -13,6 +13,8 @@ import java.net.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import cs555.chiba.service.Identity;
+import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.EventFactory;
 
 
@@ -22,17 +24,21 @@ public class TCPReceiverThread implements Runnable, AutoCloseable {
     private Socket socket;
     private DataInputStream s_in;
     private EventFactory factory;
+    private Identity identity;
+    private boolean dead = false;
 
 
     public TCPReceiverThread(Socket socket, EventFactory factory) throws IOException{
         this.socket = socket;
         this.s_in = new DataInputStream(socket.getInputStream());
         this.factory = factory;
+        this.identity = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
+
     }
 
     public void run(){
         int size;
-        while (socket != null) {
+        while (!Thread.currentThread().isInterrupted() && !this.dead) {
             try {
             	//Read in message size
             	size = s_in.readInt();
@@ -41,11 +47,14 @@ public class TCPReceiverThread implements Runnable, AutoCloseable {
                 s_in.readFully(response, 0, size);
                 //Send the serialized message to be processed
                 factory.processMessage(response, socket);
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, "TCPReceiverThread.run() ", e);
+            } catch (Exception e) {
+                if (!this.dead) {
+                    logger.log(Level.SEVERE, "TCPReceiverThread.run() ", e);
+                }
                 break;
             }
         }
+        logger.info("TCPReceiverThread Closed [" + this.identity.getIdentityKey() + "]");
         close();
     }
 
@@ -54,11 +63,7 @@ public class TCPReceiverThread implements Runnable, AutoCloseable {
      */
     @Override
     public void close() {
-        try {
-            socket.close();
-            this.socket = null;
-        } catch (IOException e){
-            logger.log(Level.SEVERE, "Failed to Close", e);
-        }
+        this.dead = true;
+        Utilities.closeQuietly(socket);
     }
 }

@@ -1,5 +1,6 @@
 package cs555.chiba.registry;
 
+import cs555.chiba.overlay.network.NetworkMap;
 import cs555.chiba.service.Identity;
 import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
@@ -18,7 +19,7 @@ public class RegistryNode extends ServiceNode {
    public static void main(String[] args) {
       try {
          RegistryNode node = parseArguments(args);
-         startup(node.getIdentity().getPort(), node, RegistryCommands.getDiscoveryCommands(node), "Discovery->");
+         startup(node.getIdentity().getPort(), node, RegistryCommands.getRegistryCommands(node), "Registry->");
       }
       catch (Exception e) {
          logger.log(Level.SEVERE, "Startup failed", e);
@@ -28,7 +29,7 @@ public class RegistryNode extends ServiceNode {
    private static RegistryNode parseArguments(String[] args) throws UnknownHostException {
 
       if (!Utilities.checkArgCount(1, args)) {
-         throw new IllegalArgumentException("Discovery Node requires 1 arguments:  port-num");
+         throw new IllegalArgumentException("Registry Node requires 1 arguments:  port-num");
       }
 
       int port = Utilities.parsePort(args[0]);
@@ -39,6 +40,7 @@ public class RegistryNode extends ServiceNode {
    }
 
    private final RegisteredPeers registry = new RegisteredPeers();
+   private NetworkMap networkMap;
 
    public RegistryNode(Identity ident) {
       super();
@@ -63,5 +65,10 @@ public class RegistryNode extends ServiceNode {
 
    public RegisteredPeers getRegistry() {
       return registry;
+   }
+
+   public String buildOverlay(int minConnections, int maxConnections) {
+      this.networkMap = new NetworkMap(this.registry.listRegisteredPeers(), minConnections, maxConnections);
+      return "Successfully Created.  Next step is building the cluster.";
    }
 }
