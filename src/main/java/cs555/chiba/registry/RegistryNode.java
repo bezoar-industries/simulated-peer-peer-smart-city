@@ -18,7 +18,7 @@ public class RegistryNode extends ServiceNode {
    public static void main(String[] args) {
       try {
          RegistryNode node = parseArguments(args);
-         startup(node.getIdentity().getPort(), node, RegistryCommands.getDiscoveryCommands(), "Discovery->");
+         startup(node.getIdentity().getPort(), node, RegistryCommands.getDiscoveryCommands(node), "Discovery->");
       }
       catch (Exception e) {
          logger.log(Level.SEVERE, "Startup failed", e);
