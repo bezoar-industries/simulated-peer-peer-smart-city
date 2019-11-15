@@ -30,17 +30,17 @@ class RegistryCommands {
          return null;
       });
 
-      builder.registerCommand("randomWalk", args -> { // list all the registered nodes
+      builder.registerCommand("randomWalk", args -> {
          sendRandomWalkRequest(args[0], registryNode);
          return null;
       });
 
-      builder.registerCommand("gossip", args -> { // list all the registered nodes
+      builder.registerCommand("gossip", args -> {
          sendFloodingRequest(args[0], registryNode);
          return null;
       });
 
-      builder.registerCommand("flood", args -> { // list all the registered nodes
+      builder.registerCommand("flood", args -> {
          sendGossipingRequest(args[0], registryNode);
          return null;
       });
@@ -70,18 +70,21 @@ class RegistryCommands {
 
    private static void sendRandomWalkRequest(String metric, RegistryNode registryNode) {
       RandomWalk request = new RandomWalk(UUID.randomUUID(), registryNode.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
+      registryNode.addRequest(request.getID());
       logger.info("Sending random Walk request");
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
    private static void sendGossipingRequest(String metric, RegistryNode registryNode) {
       GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
+      registryNode.addRequest(request.getID());
       logger.info("Sending Gossiping request");
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
    private static void sendFloodingRequest(String metric, RegistryNode registryNode) {
       Flood request = new Flood(UUID.randomUUID(), registryNode.getTcpConnectionsCache().getRegistryID(), metric, 0, 10);
+      registryNode.addRequest(request.getID());
       logger.info("Sending Flooding request");
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
