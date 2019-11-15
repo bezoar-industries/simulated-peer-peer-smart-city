@@ -31,16 +31,28 @@ class RegistryCommands {
       });
 
       builder.registerCommand("randomWalk", args -> {
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Random Walk requires 1 argument:  " + "metric-to-collect");
+         }
+
          sendRandomWalkRequest(args[0], registryNode);
          return null;
       });
 
-      builder.registerCommand("gossip", args -> {
+      builder.registerCommand("flood", args -> {
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Flooding requires 1 argument:  " + "metric-to-collect");
+         }
+
          sendFloodingRequest(args[0], registryNode);
          return null;
       });
 
-      builder.registerCommand("flood", args -> {
+      builder.registerCommand("gossip", args -> {
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Gossiping requires 1 argument:  " + "metric-to-collect");
+         }
+
          sendGossipingRequest(args[0], registryNode);
          return null;
       });

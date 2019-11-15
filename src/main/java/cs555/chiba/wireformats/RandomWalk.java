@@ -76,7 +76,7 @@ public class RandomWalk implements Event{
     	byte[] IDbytes = ID.toString().getBytes();
     	byte[] senderIDbytes = senderID.toString().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+5*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+6*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
