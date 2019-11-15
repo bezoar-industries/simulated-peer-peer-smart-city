@@ -57,6 +57,15 @@ public class EventFactory {
             case REGISTER:
                 this.n.onEvent(new RegisterMessage(message));
                 break;
+            case RANDOM_WALK:
+                this.n.onEvent(new RandomWalk(message, socket));
+                break;
+            case FLOOD:
+                this.n.onEvent(new Flood(message, socket));
+                break;
+            case GOSSIP_QUERY:
+                this.n.onEvent(new GossipQuery(message, socket));
+                break;
             default:
                 System.out.println("Unrecognised message type");
         }

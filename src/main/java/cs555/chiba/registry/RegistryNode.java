@@ -68,7 +68,7 @@ public class RegistryNode extends ServiceNode {
             resultMetrics.addTotalNumberOfHops(randomWalkMessage.getCurrentHop());
             resultMetrics.setTimeOfLastReceivedResultMessage();
 
-            requests.put(randomWalkMessage.getID(), resultMetrics);
+            requests.merge(randomWalkMessage.getID(), resultMetrics, ResultMetrics::merge);
          } else if (event instanceof GossipQuery) {
             GossipQuery gossipQueryMessage = (GossipQuery)event;
             ResultMetrics resultMetrics;
@@ -82,7 +82,7 @@ public class RegistryNode extends ServiceNode {
             resultMetrics.addTotalNumberOfHops(gossipQueryMessage.getCurrentHop());
             resultMetrics.setTimeOfLastReceivedResultMessage();
 
-            requests.put(gossipQueryMessage.getID(), resultMetrics);
+            requests.merge(gossipQueryMessage.getID(), resultMetrics, ResultMetrics::merge);
          } else if (event instanceof Flood) {
             Flood floodMessage = (Flood)event;
 
@@ -97,7 +97,7 @@ public class RegistryNode extends ServiceNode {
             resultMetrics.addTotalNumberOfHops(floodMessage.getCurrentHop());
             resultMetrics.setTimeOfLastReceivedResultMessage();
 
-            requests.put(floodMessage.getID(), resultMetrics);
+            requests.merge(floodMessage.getID(), resultMetrics, ResultMetrics::merge);
          } else {
             logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
          }

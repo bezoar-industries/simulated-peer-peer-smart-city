@@ -53,4 +53,11 @@ public class ResultMetrics {
     public void setTimeOfLastReceivedResultMessage() {
         this.timeOfLastReceivedResultMessage = new Date();
     }
+
+    public static ResultMetrics merge(ResultMetrics rm1, ResultMetrics rm2) {
+        rm1.addTotalNumberOfHops(rm2.getTotalNumberOfHops());
+        rm1.addTotalNumberOfDevices(rm2.getTotalNumberOfDevices());
+        rm1.setTimeOfLastReceivedResultMessage();
+        return rm1;
+    }
 }
