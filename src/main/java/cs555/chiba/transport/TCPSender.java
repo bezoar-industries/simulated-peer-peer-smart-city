@@ -8,6 +8,9 @@
 */
 package cs555.chiba.transport;
 
+import cs555.chiba.service.Identity;
+import cs555.chiba.util.Utilities;
+
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,15 +21,19 @@ public class TCPSender implements Runnable, AutoCloseable {
 	private static final Logger logger = Logger.getLogger(TCPSender.class.getName());
 
 	private Socket socket;
-    private DataOutputStream s_out;
-    private LinkedBlockingQueue<byte[]> messageQueue;
+	private DataOutputStream s_out;
+	private LinkedBlockingQueue<byte[]> messageQueue;
+	private Identity identity;
+	private boolean dead = false;
 
 
-    public TCPSender(Socket socket) throws IOException{
+
+	public TCPSender(Socket socket) throws IOException{
         this.socket = socket;
         this.s_out = new DataOutputStream(socket.getOutputStream());
-        this.messageQueue = new LinkedBlockingQueue<byte[]>();
-    }
+        this.messageQueue = new LinkedBlockingQueue<>();
+		  this.identity = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
+	}
 
     /**
      * Add a message to the queue of messages waiting to be sent
@@ -53,33 +60,32 @@ public class TCPSender implements Runnable, AutoCloseable {
     	}
     }
 
-    public void run(){
-        while (!Thread.currentThread().isInterrupted() && socket != null) {
-        	byte[] nextMessage;
+	public void run() {
+		while (!Thread.currentThread().isInterrupted() && !this.dead) {
+			byte[] nextMessage;
 			try {
 				//Block until there are messages in the queue
 				nextMessage = messageQueue.take();
-				if (nextMessage != null) { 
-	                sendMessage(nextMessage);
-	            }
-			} catch (InterruptedException e) {
-				logger.log(Level.SEVERE, "TCPSender.run(): ", e);
-				close();
+				sendMessage(nextMessage);
 			}
-        }
-    }
+			catch (Exception e) {
+				if (!this.dead) {
+					logger.log(Level.SEVERE, "TCPSender error:", e);
+				}
+				break;
+			}
+		}
+		close();
+		logger.info("TCPSender Closed [" + this.identity.getIdentityKey() + "]");
+	}
     
     /**
      * Close the socket
      */
     @Override
     public void close() {
-    	try {
-			this.socket.close();
-			this.socket = null;
-		} catch (IOException e) {
-			 logger.log(Level.SEVERE, "TCPSender.close() ", e);
-		}
+		 this.dead = true;
+		 Utilities.closeQuietly(socket);
     }
 
     public Socket getSocket() {

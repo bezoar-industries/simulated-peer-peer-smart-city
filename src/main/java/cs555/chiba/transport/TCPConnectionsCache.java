@@ -10,12 +10,11 @@
 package cs555.chiba.transport;
 
 import cs555.chiba.service.Identity;
+import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.EventFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -28,21 +27,13 @@ import java.util.stream.Collectors;
 public class TCPConnectionsCache implements AutoCloseable{
     private static final Logger logger = Logger.getLogger(TCPConnectionsCache.class.getName());
 
-    private ConcurrentHashMap<Identity, Thread> receiverThreads = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Identity, TCPReceiverThread> receiverThreads = new ConcurrentHashMap<>();
     private ConcurrentHashMap<UUID,TCPSender> senders = new ConcurrentHashMap<>();
 
     private UUID registryID;
 
-    public TCPConnectionsCache(){}
-
-    /**
-     * Initialize the cache with a sender 
-     * A convenience for peers connecting to a registry
-     * @param sender A reference to the sender object
-     */
-    public TCPConnectionsCache(TCPSender sender){
-        this.registryID = UUID.nameUUIDFromBytes("registry".getBytes());
-        this.addSender(sender, registryID);
+    public TCPConnectionsCache() {
+       this.registryID = UUID.nameUUIDFromBytes("registry".getBytes());
     }
 
     public UUID getRegistryID() {
@@ -51,35 +42,46 @@ public class TCPConnectionsCache implements AutoCloseable{
 
     /**
      * Adds a receiver thread to the cache
-     * @param t A receiver thread
      */
-    public void addReceiverThread(Identity ident, Thread t){
-       this.receiverThreads.put(ident, t);
+    public void addReceiverThread(Identity ident, TCPReceiverThread receiver){
+       Thread receiverThread = new Thread(receiver);
+       receiverThread.start();
+       TCPReceiverThread old = this.receiverThreads.putIfAbsent(ident, receiver);
+
+       if (old != null) {
+          old.close();
+       }
     }
 
    public void addConnection(String host, int port, UUID id, EventFactory factory) {
+      Socket sock = null;
+
       try {
-         Socket sock = new Socket(host, port);
+         sock = new Socket(host, port);
          addSender(new TCPSender(sock), id);
-         Thread thread = new Thread(new TCPReceiverThread(sock, factory));
          Identity ident = Identity.builder().withHost(host).withPort(port).build();
-         addReceiverThread(ident, thread);
-         thread.start();
+         addReceiverThread(ident, new TCPReceiverThread(sock, factory));
       }
       catch (IOException e) {
          logger.log(Level.SEVERE, "Failed to add connection to [" + host + "]", e);
+         Utilities.closeQuietly(sock);
       }
    }
 
-    /**
-     * Adds a sender to the cache with the default ID
-     * @param sender A reference to the sender object
-     */
-    public void addSender(TCPSender sender, UUID ID){
-    	Thread senderThread = new Thread(sender);
-        senderThread.start();
-        senders.putIfAbsent(ID, sender);
-    }
+   /**
+    * Adds a sender to the cache with the default ID
+    * @param sender A reference to the sender object
+    */
+   public void addSender(TCPSender sender, UUID ID) {
+
+      Thread senderThread = new Thread(sender);
+      senderThread.start();
+      TCPSender old = senders.putIfAbsent(ID, sender);
+
+      if (old != null) {
+         old.close();
+      }
+   }
     
     /**
      * Convenience to get a random sender from the cache
@@ -179,7 +181,11 @@ public class TCPConnectionsCache implements AutoCloseable{
 
     @Override
     public void close() {
-        this.receiverThreads.values().forEach(Thread::interrupt);
+        this.receiverThreads.values().forEach(TCPReceiverThread::close);
         this.senders.values().forEach(TCPSender::close);
+    }
+
+    public UUID getRegistryId() {
+        return this.registryID;
     }
 }

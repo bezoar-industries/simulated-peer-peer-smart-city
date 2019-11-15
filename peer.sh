@@ -1,5 +1,7 @@
 #/bin/bash
 
+export CLASSPATH=.:./build/classes/java/main
+
 gradle assemble
 
 PORT=60000

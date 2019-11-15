@@ -69,17 +69,11 @@ public class Peer implements Node {
         gossipCache = new LRUCache(1000);
         metrics = new HashMap<>();
 
-        try {
-            //Connect to registry and start thread
-        	Socket registrySocket = new Socket(registryHost, registryPort);
-            //add registry to connections cache - we will want to always keep this connection open
-            this.connections = new TCPConnectionsCache(new TCPSender(registrySocket));
-            Thread registryThread = new Thread(new TCPReceiverThread(registrySocket, eventFactory));
-           Identity registry = Identity.builder().withHost(registryHost.getHostName()).withPort(registryPort).build();
-           this.connections.addReceiverThread(registry, registryThread);
-            registryThread.start();
-        } catch (IOException e){
-           logger.log(Level.SEVERE, "Peer() ", e);
+        this.connections = new TCPConnectionsCache();
+        this.connections.addConnection(registryHost.getHostName(), registryPort, this.connections.getRegistryId(), this.eventFactory);
+
+        if (this.connections.listConnections().size() != 1) {
+           throw new IllegalStateException("Unable to communicate with Registry.  Double check your host and registry before running again.");
         }
 
         //Start a server socket so we can receive incoming connections

@@ -168,6 +168,7 @@ public abstract class ServiceNode implements Node {
       specialShutdown();
       this.server.close();
       this.serverThread.interrupt();
+      this.connections.close();
       this.dead = true;
    }
 
