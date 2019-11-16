@@ -34,7 +34,7 @@ public class RegisterMessage extends Message {
    }
 
    @Override void spool(DataOutputStream output) throws IOException {
-      sendString(this.identity.getIdentityKey(), output);
+      sendString(this.identity.getIdentityName(), output);
       sendString(this.uuid.toString(), output);
    }
 

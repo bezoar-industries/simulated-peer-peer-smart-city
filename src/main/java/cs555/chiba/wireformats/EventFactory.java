@@ -9,16 +9,15 @@
 
 package cs555.chiba.wireformats;
 
+import cs555.chiba.service.ServiceNode;
+
 import java.io.IOException;
 import java.net.Socket;
-
-import cs555.chiba.node.Node;
-
 
 public class EventFactory {
 
     private static EventFactory instance;
-    private Node n;
+    private ServiceNode n;
 
     //private constructor to avoid client applications to use constructor
     private EventFactory(){}
@@ -28,7 +27,7 @@ public class EventFactory {
      * @param n The node associated with this factory
      * @return EventFactory The instance
      */
-    public static EventFactory getInstance(Node n){
+    public static EventFactory getInstance(ServiceNode n){
         if(instance == null){
             synchronized (EventFactory.class) {
                 if(instance == null){

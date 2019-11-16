@@ -29,6 +29,10 @@ public class Identity {
       return identityKey;
    }
 
+   public String getIdentityName() {
+      return this.socketAddress.getHostName() + ":" + this.getPort();
+   }
+
    public String getHost() {
       return host;
    }
