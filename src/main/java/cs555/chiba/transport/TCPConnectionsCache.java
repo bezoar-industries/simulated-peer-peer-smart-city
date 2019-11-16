@@ -117,6 +117,28 @@ public class TCPConnectionsCache implements AutoCloseable{
     public void send(UUID ID, byte[] message){
         senders.get(ID).addMessage(message);
     }
+
+   /**
+    * Send a message one off message to a peer.
+    * This is builds and tears down a socket per message.
+    * Do not use outside of setup.
+    */
+   public void send(Identity identity, byte[] message){
+      Socket sock = null;
+
+      try {
+         sock = new Socket(identity.getHost(), identity.getPort());
+         TCPSender sender = new TCPSender(sock);
+         sender.sendMessage(message);
+         sender.close();
+      }
+      catch (IOException e) {
+         logger.log(Level.SEVERE, "Failed to message to [" + identity.getIdentityKey() + "]", e);
+      }
+      finally {
+         Utilities.closeQuietly(sock);
+      }
+   }
     
     /**
      * Send a message a random sender

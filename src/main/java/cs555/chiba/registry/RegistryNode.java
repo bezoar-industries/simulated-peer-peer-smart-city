@@ -125,4 +125,8 @@ public class RegistryNode extends ServiceNode {
       this.networkMap = new NetworkMap(this.registry.listRegisteredPeers(), minConnections, maxConnections);
       return "Successfully Created.  Next step is building the cluster.";
    }
+
+   public void setNetworkMap(NetworkMap networkMap) {
+      this.networkMap = networkMap;
+   }
 }

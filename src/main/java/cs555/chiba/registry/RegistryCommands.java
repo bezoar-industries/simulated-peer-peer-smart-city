@@ -2,14 +2,16 @@ package cs555.chiba.registry;
 
 import cs555.chiba.overlay.network.NetworkMap;
 import cs555.chiba.overlay.network.NetworkMapTransformer;
+import cs555.chiba.overlay.network.Vertex;
 import cs555.chiba.service.Commands;
-import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.RandomWalk;
 
 import java.io.File;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,7 +28,7 @@ class RegistryCommands {
    static Commands getRegistryCommands(RegistryNode registryNode) {
       Commands.Builder builder = Commands.builder();
       builder.registerCommand("listpeers", args -> { // list all the registered nodes
-         logger.info(listPeers());
+         logger.info(listPeers(registryNode));
          return null;
       });
 
@@ -64,7 +66,7 @@ class RegistryCommands {
 
          int min = Utilities.quietlyParseInt(args[0], 1);
          int max = Utilities.quietlyParseInt(args[1], 2);
-         logger.info(buildOverlay(min, max));
+         logger.info(buildOverlay(min, max, registryNode));
          return null;
       });
 
@@ -73,7 +75,26 @@ class RegistryCommands {
             throw new IllegalArgumentException("Export Overlay requires 1 arguments: path-to-export-file");
          }
 
-         logger.info(exportOverlay(args[0]));
+         logger.info(exportOverlay(args[0], registryNode));
+         return null;
+      });
+
+      builder.registerCommand("importoverlay", args -> { // import an overlay
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Import Overlay requires 1 arguments: path-to-import-file");
+         }
+
+         logger.info(importOverlay(args[0], registryNode));
+         return null;
+      });
+
+      builder.registerCommand("connectpeers", args -> { // connect the peers
+         if (registryNode.getNetworkMap() == null) {
+            throw new IllegalArgumentException("Overlay is empty.  Call buildoverlay.");
+         }
+         else {
+            connectPeers(registryNode);
+         }
          return null;
       });
 
@@ -103,10 +124,11 @@ class RegistryCommands {
 
    /**
     * Who's in our system
+    * @param registryNode
     */
-   private static String listPeers() {
+   private static String listPeers(RegistryNode registryNode) {
       StringBuffer out = new StringBuffer("Registered Peers: \n");
-      ServiceNode.getThisNode(RegistryNode.class).getRegistry().listRegisteredPeers().forEach(ident -> {
+      registryNode.getRegistry().listRegisteredPeers().forEach(ident -> {
          out.append(ident.getIdentityKey()).append("\n");
       });
 
@@ -116,19 +138,19 @@ class RegistryCommands {
    /**
     * Create an Overlay
     */
-   private static String buildOverlay(int minConnections, int maxConnections) {
+   private static String buildOverlay(int minConnections, int maxConnections, RegistryNode registryNode) {
       StringBuffer out = new StringBuffer("Building Overlay: \n");
-      out.append(ServiceNode.getThisNode(RegistryNode.class).buildOverlay(minConnections, maxConnections));
+      out.append(registryNode.buildOverlay(minConnections, maxConnections));
       return out.toString();
    }
 
    /**
     * Export an Overlay
     */
-   private static String exportOverlay(String exportPath) {
-      StringBuffer out = new StringBuffer("Exporting Overlay: \n");
+   private static String exportOverlay(String exportPath, RegistryNode registryNode) {
+      StringBuilder out = new StringBuilder("Exporting Overlay: \n");
       try {
-         NetworkMap net = ServiceNode.getThisNode(RegistryNode.class).getNetworkMap();
+         NetworkMap net = registryNode.getNetworkMap();
 
          if (net == null) {
             out.append("Overlay is empty.  Call buildoverlay first.");
@@ -145,5 +167,50 @@ class RegistryCommands {
          logger.log(Level.SEVERE, "Export Failed", e);
       }
       return out.toString();
+   }
+
+   /**
+    * Import an Overlay
+    */
+   private static String importOverlay(String importPath, RegistryNode registryNode) {
+      StringBuilder out = new StringBuilder("Importing Overlay: \n");
+      try {
+         File file = new File(importPath);
+
+         if (!file.exists() || file.isDirectory() || !file.canRead()) {
+            out.append("Cannot read file [").append(file.getAbsolutePath()).append("]");
+         }
+         else {
+            NetworkMapTransformer trans = new NetworkMapTransformer(file);
+            NetworkMap net = trans.applyRegisteredNodes(registryNode.getRegistry().listRegisteredPeers());
+            registryNode.setNetworkMap(net);
+            out.append("Import Succeeded: [").append(net.size()).append("] vertices and [").append(net.getFullEdgeList().size()).append("] edges\n");
+         }
+      }
+      catch (Exception e) {
+         out.append("Import Failed \n");
+         logger.log(Level.SEVERE, "Import Failed", e);
+      }
+      return out.toString();
+   }
+
+   private static void connectPeers(RegistryNode registryNode) {
+      logger.info("Connecting Peers: \n");
+
+      List<Vertex> vertices = registryNode.getNetworkMap().getVertices();
+
+      for (Vertex vertex : vertices) {
+         try {
+            logger.info("Setting up peer: [" + vertex.getName().getIdentityKey() + "] \n");
+            InitiateConnectionsMessage message = new InitiateConnectionsMessage(vertex.getConnectionList());
+            registryNode.getTcpConnectionsCache().send(vertex.getName(), message.getBytes());
+         }
+         catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to set up peer: [" + vertex.getName().getIdentityKey() + "]", e);
+
+         }
+      }
+
+      logger.info("Finished connecting peers.  If any failed, rerun this command. \n");
    }
 }
