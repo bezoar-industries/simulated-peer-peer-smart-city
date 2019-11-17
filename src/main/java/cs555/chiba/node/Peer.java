@@ -23,7 +23,6 @@ import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.IntroductionMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.RegisterMessage;
-import cs555.chiba.wireformats.SampleMessage;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -161,14 +160,6 @@ public class Peer extends ServiceNode {
    }
 
    /**
-    * A handler for SampleMessages
-    * @param e The SampleMessage
-    */
-   public void handle(SampleMessage e) {
-      logger.info("Recieved sample message with num: " + e.getNum());
-   }
-
-   /**
     * A handler for Flood messages
     * @param e The Flood message
     */
@@ -266,10 +257,7 @@ public class Peer extends ServiceNode {
     * @param e The message that must be handled
     */
    @Override public void onEvent(Event e) {
-      if (e instanceof SampleMessage) {
-         handle((SampleMessage) e);
-      }
-      else if (e instanceof Flood) {
+      if (e instanceof Flood) {
          handle((Flood) e);
       }
       else if (e instanceof RandomWalk) {

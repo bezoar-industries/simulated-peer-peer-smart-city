@@ -48,9 +48,6 @@ public class EventFactory {
    public void processMessage(byte[] message, Socket socket) throws IOException {
       Protocol type = Protocol.values()[message[0]];
       switch (type) {
-         case SAMPLE_MESSAGE:
-            this.n.onEvent(new SampleMessage(message, socket));
-            break;
          case INTRODUCTION:
             this.n.onEvent(new IntroductionMessage(message, socket));
             break;
