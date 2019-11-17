@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 public class TCPSender implements Runnable, AutoCloseable {
 
    private static final Logger logger = Logger.getLogger(TCPSender.class.getName());
+   private static final byte[] STOP = "STOP".getBytes();
 
    private Socket socket;
    private DataOutputStream s_out;
@@ -73,7 +74,10 @@ public class TCPSender implements Runnable, AutoCloseable {
          try {
             //Block until there are messages in the queue
             nextMessage = messageQueue.take();
-            sendMessage(nextMessage);
+            // A fun way to break out of a linkedBlockingQueue
+            if (!nextMessage.equals(STOP)) {
+               sendMessage(nextMessage);
+            }
          }
          catch (Exception e) {
             if (!this.dead) {
@@ -92,6 +96,7 @@ public class TCPSender implements Runnable, AutoCloseable {
    @Override public void close() {
       this.dead = true;
       Utilities.closeQuietly(socket);
+      this.messageQueue.add(STOP);
       ServiceNode.getThisNode().removeConnection(this.identity);
    }
 

@@ -7,7 +7,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Objects;
-import java.util.UUID;
 
 public class IntroductionMessage extends Message {
 

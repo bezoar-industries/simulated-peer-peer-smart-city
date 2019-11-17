@@ -66,7 +66,6 @@ public abstract class ServiceNode {
       if (c == null) {
          logger.severe("Unable to open system console! Waiting on interrupt.");
          Thread.currentThread().join(); // sleep forever... or until ctl-c interrupts it
-         //Thread.sleep(Long.MAX_VALUE); // sleep forever... or until ctl-c interrupts it
       }
 
       return c.readLine(prompt);
