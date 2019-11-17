@@ -9,6 +9,7 @@
 package cs555.chiba.transport;
 
 import cs555.chiba.service.Identity;
+import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 
 import java.io.DataOutputStream;
@@ -91,6 +92,7 @@ public class TCPSender implements Runnable, AutoCloseable {
    @Override public void close() {
       this.dead = true;
       Utilities.closeQuietly(socket);
+      ServiceNode.getThisNode().removeConnection(this.identity);
    }
 
    public Socket getSocket() {

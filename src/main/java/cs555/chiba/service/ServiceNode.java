@@ -36,6 +36,10 @@ public abstract class ServiceNode {
       return identity;
    }
 
+   public EventFactory getEventFactory() {
+      return this.eventFactory;
+   }
+
    public abstract void onEvent(Event e);
 
    /**
@@ -173,4 +177,7 @@ public abstract class ServiceNode {
       return nodeType.cast(myself);
    }
 
+   public void removeConnection(Identity identity) {
+      this.connections.removeConnection(identity);
+   }
 }

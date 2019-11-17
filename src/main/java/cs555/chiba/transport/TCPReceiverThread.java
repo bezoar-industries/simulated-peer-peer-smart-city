@@ -9,6 +9,7 @@
 package cs555.chiba.transport;
 
 import cs555.chiba.service.Identity;
+import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.EventFactory;
 
@@ -69,5 +70,14 @@ public class TCPReceiverThread implements Runnable, AutoCloseable {
    @Override public void close() {
       this.dead = true;
       Utilities.closeQuietly(socket);
+      ServiceNode.getThisNode().removeConnection(this.identity);
+   }
+
+   public void setIdentity(Identity identity) {
+      this.identity = identity;
+   }
+
+   public Socket getSocket() {
+      return this.socket;
    }
 }

@@ -1,5 +1,7 @@
 package cs555.chiba.util;
 
+import cs555.chiba.service.Identity;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
@@ -7,8 +9,8 @@ import java.util.UUID;
 public class LRUCache {
 	
 	public class Entry {
-		UUID value;
-		public HashSet<UUID> valueList;
+		Identity value;
+		public HashSet<Identity> valueList;
 		String keyName;
 		UUID key;
 		Entry left;
@@ -38,7 +40,7 @@ public class LRUCache {
 		return hashmap.containsKey(key);
 	}
 	
-	public boolean putEntryAppend(UUID key, String keyName, UUID value) {
+	public boolean putEntryAppend(UUID key, String keyName, Identity value) {
 		boolean updated = false;
 		if (hashmap.containsKey(key)){
 			Entry entry = hashmap.get(key);
@@ -52,7 +54,7 @@ public class LRUCache {
 			Entry newnode = new Entry();
 			newnode.left = null;
 			newnode.right = null;
-			newnode.valueList = new HashSet<UUID>();
+			newnode.valueList = new HashSet<Identity>();
 			newnode.valueList.add(value);
 			newnode.keyName = keyName;
 			newnode.key = key;
@@ -70,7 +72,7 @@ public class LRUCache {
 		return updated;
 	}
 
-	public void putEntry(UUID key, UUID value) {
+	public void putEntry(UUID key, Identity value) {
 		if (hashmap.containsKey(key)){
 			Entry entry = hashmap.get(key);
 			entry.value = value;

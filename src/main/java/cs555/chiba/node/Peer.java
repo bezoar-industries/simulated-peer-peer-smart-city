@@ -19,11 +19,14 @@ import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipData;
 import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.InitiateConnectionsMessage;
+import cs555.chiba.wireformats.IntroductionMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.RegisterMessage;
 import cs555.chiba.wireformats.SampleMessage;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,7 +39,6 @@ public class Peer extends ServiceNode {
 
    private static final Logger logger = Logger.getLogger(Peer.class.getName());
 
-   private UUID id;
    private Identity registryId;
    private LRUCache queryIDCache;
    private LRUCache gossipCache;
@@ -45,7 +47,6 @@ public class Peer extends ServiceNode {
 
    public Peer(String registryHost, int registryPort, int numberOfIoTDevices) throws IOException {
       super();
-      this.id = UUID.randomUUID();
       this.registryId = Identity.builder().withHost(registryHost).withPort(registryPort).build();
       this.createIotNetwork(numberOfIoTDevices);
 
@@ -61,8 +62,8 @@ public class Peer extends ServiceNode {
    private void register() {
       try {
          logger.info("Registering: [" + this.getIdentity().getIdentityName() + "] \n");
-         RegisterMessage message = new RegisterMessage(this.getIdentity(), id);
-         this.getTcpConnectionsCache().send(this.registryId, message.getBytes());
+         RegisterMessage message = new RegisterMessage(this.getIdentity());
+         this.getTcpConnectionsCache().sendSingle(this.registryId, message.getBytes());
       }
       catch (Exception e) {
          throw new IllegalStateException("Unable to communicate with Registry.  Double check your host and registry before running again.", e);
@@ -163,7 +164,7 @@ public class Peer extends ServiceNode {
     * A handler for SampleMessages
     * @param e The SampleMessage
     */
-   public void SampleMessage(SampleMessage e) {
+   public void handle(SampleMessage e) {
       logger.info("Recieved sample message with num: " + e.getNum());
    }
 
@@ -171,7 +172,7 @@ public class Peer extends ServiceNode {
     * A handler for Flood messages
     * @param e The Flood message
     */
-   public void Flood(Flood e) {
+   public void handle(Flood e) {
       if (queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - ignore it
          queryIDCache.putEntry(e.getID(), e.getSenderID());
@@ -185,7 +186,7 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit() || e.getHopLimit() == -1) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
       }
    }
@@ -194,7 +195,7 @@ public class Peer extends ServiceNode {
     * A handler for RandomWalk messages
     * @param e The RandomWalk message
     */
-   public void RandomWalk(RandomWalk e) {
+   public void handle(RandomWalk e) {
       if (!queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - don't process it again (but still forward it)
          logger.info("Received random walk message with ID: " + e.getID());
@@ -205,12 +206,12 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          this.getTcpConnectionsCache().sendToRandom(m, e.getSenderID());
       }
    }
 
-   private void GossipData(GossipData e) {
+   private void handle(GossipData e) {
       boolean updated = false;
       logger.info("Received gossip query from: " + e.getSenderID());
       for (String device : e.getDevices()) {
@@ -218,12 +219,12 @@ public class Peer extends ServiceNode {
             updated = true;
       }
       if (updated) {
-         byte[] m = new GossipData(id, gossipCache.getValueLists()).getBytes();
+         byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
          this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
       }
    }
 
-   private void GossipQuery(GossipQuery e) {
+   private void handle(GossipQuery e) {
       if (queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - ignore it
          queryIDCache.putEntry(e.getID(), e.getSenderID());
@@ -237,14 +238,27 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), id, e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
-            for (UUID targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
+            for (Identity targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
                if (targetID != e.getSenderID())
                   this.getTcpConnectionsCache().send(targetID, m);
             }
          }
       }
+   }
+
+   private void handle(InitiateConnectionsMessage message) {
+      message.getNeighbors().forEach(identity -> {
+         this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
+      });
+   }
+
+   private void handle(IntroductionMessage message) {
+      Socket generatedSocket = message.getSocket();
+      Identity wrongIdent = Identity.builder().withSocketAddress(generatedSocket.getRemoteSocketAddress()).build();
+
+      this.getTcpConnectionsCache().correctIdentity(wrongIdent, message.getIdentity());
    }
 
    /**
@@ -253,19 +267,25 @@ public class Peer extends ServiceNode {
     */
    @Override public void onEvent(Event e) {
       if (e instanceof SampleMessage) {
-         SampleMessage((SampleMessage) e);
+         handle((SampleMessage) e);
       }
       else if (e instanceof Flood) {
-         Flood((Flood) e);
+         handle((Flood) e);
       }
       else if (e instanceof RandomWalk) {
-         RandomWalk((RandomWalk) e);
+         handle((RandomWalk) e);
       }
       else if (e instanceof GossipData) {
-         GossipData((GossipData) e);
+         handle((GossipData) e);
       }
       else if (e instanceof GossipQuery) {
-         GossipQuery((GossipQuery) e);
+         handle((GossipQuery) e);
+      }
+      else if (e instanceof InitiateConnectionsMessage) {
+         handle((InitiateConnectionsMessage) e);
+      }
+      else if (e instanceof IntroductionMessage) {
+         handle((IntroductionMessage) e);
       }
       else {
          logger.severe("Cannot handle message [" + e.getClass().getSimpleName() + "]");

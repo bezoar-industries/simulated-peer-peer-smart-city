@@ -18,7 +18,6 @@ import java.util.logging.Logger;
 public class RegistryNode extends ServiceNode {
 
    private static final Logger logger = Logger.getLogger(RegistryNode.class.getName());
-   public static final UUID REGISTRY_UUID = UUID.nameUUIDFromBytes("registry".getBytes());
 
    private final RegisteredPeers registry = new RegisteredPeers();
    private NetworkMap networkMap;

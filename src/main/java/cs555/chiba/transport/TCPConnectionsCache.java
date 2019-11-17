@@ -10,16 +10,16 @@
 package cs555.chiba.transport;
 
 import cs555.chiba.service.Identity;
+import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.EventFactory;
+import cs555.chiba.wireformats.IntroductionMessage;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,7 +30,7 @@ public class TCPConnectionsCache implements AutoCloseable {
    private static final Logger logger = Logger.getLogger(TCPConnectionsCache.class.getName());
 
    private ConcurrentHashMap<Identity, TCPReceiverThread> receiverThreads = new ConcurrentHashMap<>();
-   private ConcurrentHashMap<UUID, TCPSender> senders = new ConcurrentHashMap<>();
+   private ConcurrentHashMap<Identity, TCPSender> senders = new ConcurrentHashMap<>();
 
    public TCPConnectionsCache() {
    }
@@ -48,17 +48,26 @@ public class TCPConnectionsCache implements AutoCloseable {
       }
    }
 
-   public void addConnection(String host, int port, UUID id, EventFactory factory) {
+   public void addConnection(Identity ident, EventFactory factory) {
       Socket sock = null;
 
+      TCPSender node = this.senders.get(ident);
+
+      if (node != null) {
+         logger.info("Already connected to [" + ident.getIdentityKey() + "]");
+         return;
+      }
+
       try {
-         sock = new Socket(host, port);
-         addSender(new TCPSender(sock), id);
-         Identity ident = Identity.builder().withHost(host).withPort(port).build();
+         sock = new Socket(ident.getHost(), ident.getPort());
+         TCPSender sender = new TCPSender(sock);
+         addSender(sender, ident);
          addReceiverThread(ident, new TCPReceiverThread(sock, factory));
+         IntroductionMessage message = new IntroductionMessage(ServiceNode.getThisNode().getIdentity());
+         sender.sendMessage(message.getBytes());
       }
       catch (IOException e) {
-         logger.log(Level.SEVERE, "Failed to add connection to [" + host + "]", e);
+         logger.log(Level.SEVERE, "Failed to add connection to [" + ident.getIdentityKey() + "]", e);
          Utilities.closeQuietly(sock);
       }
    }
@@ -67,11 +76,10 @@ public class TCPConnectionsCache implements AutoCloseable {
     * Adds a sender to the cache with the default ID
     * @param sender A reference to the sender object
     */
-   public void addSender(TCPSender sender, UUID ID) {
-
+   public void addSender(TCPSender sender, Identity ident) {
       Thread senderThread = new Thread(sender);
       senderThread.start();
-      TCPSender old = senders.putIfAbsent(ID, sender);
+      TCPSender old = senders.putIfAbsent(ident, sender);
 
       if (old != null) {
          old.close();
@@ -90,27 +98,27 @@ public class TCPConnectionsCache implements AutoCloseable {
 
    /**
     * Removes a sender from the cache
-    * @param ID The ID of the sender to be removed
+    * @param ident The ID of the sender to be removed
     */
-   public void removeSender(UUID ID) {
-      senders.remove(ID);
+   public void removeSender(Identity ident) {
+      senders.remove(ident);
    }
 
    /**
     * Check if we have a sender with the given ID
     * @returns boolean True if the sender exists
     */
-   public boolean sendersContains(UUID item) {
-      return senders.containsKey(item);
+   public boolean sendersContains(Identity ident) {
+      return senders.containsKey(ident);
    }
 
    /**
     * Send a message to the sender with the given ID
-    * @param ID The ID of the recipient
+    * @param ident The ID of the recipient
     * @param message The serialized message to be sent
     */
-   public void send(UUID ID, byte[] message) {
-      senders.get(ID).addMessage(message);
+   public void send(Identity ident, byte[] message) {
+      senders.get(ident).addMessage(message);
    }
 
    /**
@@ -118,7 +126,7 @@ public class TCPConnectionsCache implements AutoCloseable {
     * This is builds and tears down a socket per message.
     * Do not use outside of registry communication.
     */
-   public void send(Identity identity, byte[] message) {
+   public void sendSingle(Identity identity, byte[] message) {
       Socket sock = null;
 
       try {
@@ -148,14 +156,14 @@ public class TCPConnectionsCache implements AutoCloseable {
     * @param exclude The ID of the excluded recipient
     * @param message The serialized message to be sent
     */
-   public void sendToRandom(byte[] message, UUID exclude) {
+   public void sendToRandom(byte[] message, Identity exclude) {
       Random generator = new Random();
       Object[] keys = senders.keySet().toArray();
 
-      UUID key;
+      Identity key;
       do {
-         key = (UUID) keys[generator.nextInt(keys.length)];
-      } while (key == exclude);
+         key = (Identity) keys[generator.nextInt(keys.length)];
+      } while (!key.equals(exclude));
 
       TCPSender randomSender = senders.get(key);
       randomSender.addMessage(message);
@@ -166,7 +174,7 @@ public class TCPConnectionsCache implements AutoCloseable {
     * @param message The serialized message to be sent
     */
    public void sendAll(byte[] message) {
-      for (UUID key : senders.keySet()) {
+      for (Identity key : senders.keySet()) {
          this.send(key, message); // note, the registry is not stored in the senders list
       }
    }
@@ -176,8 +184,8 @@ public class TCPConnectionsCache implements AutoCloseable {
     * except the registry
     * @param message The serialized message to be sent
     */
-   public void sendAll(byte[] message, UUID exclude) {
-      for (UUID key : senders.keySet()) {
+   public void sendAll(byte[] message, Identity exclude) {
+      for (Identity key : senders.keySet()) {
          if (key != exclude)
             this.send(key, message); // note, the registry is not stored in the senders list
       }
@@ -190,5 +198,30 @@ public class TCPConnectionsCache implements AutoCloseable {
    @Override public void close() {
       this.receiverThreads.values().forEach(TCPReceiverThread::close);
       this.senders.values().forEach(TCPSender::close);
+   }
+
+   /**
+    * When another node connects to this node, the remote host:port is not the server socket.  It's the generated socket.
+    * In order to keep things sane, we're going to always identify connections by their server socket host:port.
+    *
+    * To do that, the node has to send their server host:port to us with an IntroductionMessage.  Then we have to correct
+    * how we label the connected socket.
+    */
+   public void correctIdentity(Identity wrongIdent, Identity identity) {
+      try {
+         TCPReceiverThread receiver = this.receiverThreads.remove(wrongIdent);
+         receiver.setIdentity(identity);
+         this.receiverThreads.put(identity, receiver);
+         TCPSender sender = new TCPSender(receiver.getSocket());
+         addSender(sender, identity);
+      }
+      catch (IOException e) {
+         logger.log(Level.SEVERE, "Failed to correct socket labels.  We may have duplicate connections. Wrong Label [" + wrongIdent.getIdentityKey() + "] Right Label [" + identity.getIdentityKey() + "]");
+      }
+   }
+
+   public void removeConnection(Identity identity) {
+      Utilities.closeQuietly(this.receiverThreads.remove(identity));
+      Utilities.closeQuietly(this.senders.remove(identity));
    }
 }
