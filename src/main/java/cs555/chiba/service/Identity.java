@@ -16,7 +16,7 @@ public class Identity {
    private final String identityKey; // used to print the name and as a key in maps.
    private final String host; // host and port used in various messages and command line activites
    private final int port;
-   private final InetSocketAddress socketAddress; // used to resolve the given id to confirm validity of the identity. TODO: Remove this.  Resolving host name takes way too long, and it isn't really necessary.
+   private final InetSocketAddress socketAddress; // can be used to resolve the given id to confirm validity of the identity via dns.  However, that takes too long to do on every Identity object.
 
    Identity(String identityKey, String host, int port, InetSocketAddress socketAddress) {
       this.identityKey = identityKey;

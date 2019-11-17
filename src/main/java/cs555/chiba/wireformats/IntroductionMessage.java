@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Objects;
 import java.util.UUID;
 
 public class IntroductionMessage extends Message {
@@ -25,7 +26,6 @@ public class IntroductionMessage extends Message {
 
    @Override void parse(DataInputStream input) throws IOException {
       String key = readString(input);
-      String uuid = readString(input);
       this.identity = Identity.builder().withIdentityKey(key).build();
    }
 
@@ -39,6 +39,19 @@ public class IntroductionMessage extends Message {
 
    public Socket getSocket() {
       return this.socket;
+   }
+
+   @Override public boolean equals(Object o) {
+      if (this == o)
+         return true;
+      if (o == null || getClass() != o.getClass())
+         return false;
+      IntroductionMessage that = (IntroductionMessage) o;
+      return identity.equals(that.identity);
+   }
+
+   @Override public int hashCode() {
+      return Objects.hash(identity);
    }
 
    @Override public String toString() {

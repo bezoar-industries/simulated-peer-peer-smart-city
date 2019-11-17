@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 public class RegisterMessage extends Message {
@@ -35,6 +36,19 @@ public class RegisterMessage extends Message {
 
    public Identity getIdentity() {
       return identity;
+   }
+
+   @Override public boolean equals(Object o) {
+      if (this == o)
+         return true;
+      if (o == null || getClass() != o.getClass())
+         return false;
+      RegisterMessage that = (RegisterMessage) o;
+      return identity.equals(that.identity);
+   }
+
+   @Override public int hashCode() {
+      return Objects.hash(identity);
    }
 
    @Override public String toString() {
