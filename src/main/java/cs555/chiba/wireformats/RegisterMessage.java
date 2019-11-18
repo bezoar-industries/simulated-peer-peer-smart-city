@@ -9,17 +9,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 public class RegisterMessage extends Message {
 
    private Identity identity;
-   private UUID uuid;
 
-   public RegisterMessage(Identity identity, UUID uuid) {
+   public RegisterMessage(Identity identity) {
       super(Protocol.REGISTER);
       this.identity = identity;
-      this.uuid = uuid;
    }
 
    public RegisterMessage(byte[] message) throws IOException {
@@ -28,25 +27,31 @@ public class RegisterMessage extends Message {
 
    @Override void parse(DataInputStream input) throws IOException {
       String key = readString(input);
-      String uuid = readString(input);
       this.identity = Identity.builder().withIdentityKey(key).build();
-      this.uuid = UUID.fromString(uuid);
    }
 
    @Override void spool(DataOutputStream output) throws IOException {
-      sendString(this.identity.getIdentityKey(), output);
-      sendString(this.uuid.toString(), output);
+      sendString(this.identity.getIdentityName(), output);
    }
 
    public Identity getIdentity() {
       return identity;
    }
 
-   public UUID getUuid() {
-      return this.uuid;
+   @Override public boolean equals(Object o) {
+      if (this == o)
+         return true;
+      if (o == null || getClass() != o.getClass())
+         return false;
+      RegisterMessage that = (RegisterMessage) o;
+      return identity.equals(that.identity);
+   }
+
+   @Override public int hashCode() {
+      return Objects.hash(identity);
    }
 
    @Override public String toString() {
-      return "RegisterMessage{" + "identity=" + identity + ", uuid=" + uuid + "} " + super.toString();
+      return "RegisterMessage{" + "identity=" + identity + "} " + super.toString();
    }
 }

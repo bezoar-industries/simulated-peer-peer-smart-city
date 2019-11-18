@@ -9,6 +9,8 @@
 
 package cs555.chiba.wireformats;
 
+import cs555.chiba.service.Identity;
+
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -19,7 +21,7 @@ public class RandomWalk implements Event{
     private final int type = Protocol.RANDOM_WALK.ordinal();
     private final int SIZE_OF_INT = 4;
     private UUID ID;
-    private UUID senderID;
+    private Identity senderID;
     private String target;
     private int hopLimit;
     private int currentHop;
@@ -33,7 +35,7 @@ public class RandomWalk implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public RandomWalk(UUID ID, UUID senderID, String target, int currentHop, int hopLimit){
+    public RandomWalk(UUID ID, Identity senderID, String target, int currentHop, int hopLimit){
         this.ID = ID;
         this.senderID = senderID;
         this.currentHop = currentHop;
@@ -54,10 +56,13 @@ public class RandomWalk implements Event{
         byte[] IDbytes = new byte[IDlen]; 
         b.get(IDbytes);
         ID = UUID.fromString(new String(IDbytes));
-        int senderIDlen = b.getInt();
-        byte[] senderIDbytes = new byte[senderIDlen]; 
-        b.get(senderIDbytes);
-        senderID = UUID.fromString(new String(senderIDbytes));
+       int senderIDlen = b.getInt();
+       byte[] senderIDbytes = new byte[senderIDlen];
+       b.get(senderIDbytes);
+       int senderId = b.getInt();
+       byte[] senderBytes = new byte[senderId];
+       b.get(senderBytes);
+       senderID = Identity.builder().withIdentityKey(new String(senderBytes)).build();
         int targetLen = b.getInt();
         byte[] targetBytes = new byte[targetLen]; 
         b.get(targetBytes);
@@ -74,7 +79,7 @@ public class RandomWalk implements Event{
      */
     public byte[] getBytes(){
     	byte[] IDbytes = ID.toString().getBytes();
-    	byte[] senderIDbytes = senderID.toString().getBytes();
+    	byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
     	byte[] targetBytes = target.getBytes();
     	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+6*SIZE_OF_INT+1);
     	b.put((byte)type);
@@ -98,7 +103,7 @@ public class RandomWalk implements Event{
         return ID;
     }
     
-    public UUID getSenderID() {
+    public Identity getSenderID() {
     	return senderID;
     }
     

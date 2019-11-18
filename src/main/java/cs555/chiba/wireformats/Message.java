@@ -1,5 +1,7 @@
 package cs555.chiba.wireformats;
 
+import cs555.chiba.service.Identity;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -7,6 +9,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Message implements Event {
 
@@ -41,17 +45,37 @@ public abstract class Message implements Event {
       return this.type;
    }
 
-   protected void sendString(String field, DataOutputStream output) throws IOException {
+   void sendString(String field, DataOutputStream output) throws IOException {
       byte[] fieldBytes = field.getBytes();
       int fieldLength = fieldBytes.length;
       output.writeInt(fieldLength);
       output.write(fieldBytes);
    }
 
-   protected String readString(DataInputStream input) throws IOException {
+   String readString(DataInputStream input) throws IOException {
       int fieldLength = input.readInt();
       byte[] fieldBytes = new byte[fieldLength];
       input.readFully(fieldBytes);
       return new String(fieldBytes);
+   }
+
+   void sendListOfIdentities(List<Identity> identities, DataOutputStream output) throws IOException {
+      output.writeInt(identities.size());
+      for (Identity identity : identities) {
+         sendString(identity.getIdentityKey(), output);
+      }
+   }
+
+   List<Identity> readListOfIdentities(DataInputStream input) throws IOException {
+      List<Identity> identities = new ArrayList<>();
+      int total = input.readInt();
+
+      if (total > 0) {
+         for (int i = 0; i < total; i++) {
+            identities.add(Identity.builder().withIdentityKey(readString(input)).build());
+         }
+      }
+
+      return identities;
    }
 }

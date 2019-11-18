@@ -1,8 +1,8 @@
 package cs555.chiba.service;
 
-import cs555.chiba.node.Node;
 import cs555.chiba.transport.TCPConnectionsCache;
 import cs555.chiba.transport.TCPServerThread;
+import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.EventFactory;
 
 import java.io.Console;
@@ -16,50 +16,17 @@ import java.util.logging.Logger;
  * The main Service Node class.  This is the back end for all the other Nodes
  * It runs a user command prompt.
  */
-public abstract class ServiceNode implements Node {
+public abstract class ServiceNode {
 
    private static final Logger logger = Logger.getLogger(ServiceNode.class.getName());
-
-   protected static void startup(int port, ServiceNode node, Commands commands, String prompt) {
-      addShutdownHook(node);
-      node.startup(port, commands, prompt);
-   }
-
-   // Close everything nicely when ctl C or the exit command is sent.
-   private static void addShutdownHook(ServiceNode server) {
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-
-         public void run() {
-            try {
-               logger.info("Shutting down...");
-               server.shutdown();
-            }
-            catch (Exception e) {
-               logger.log(Level.SEVERE, "Shutdown failed", e);
-            }
-         }
-      });
-   }
-
    private static ServiceNode myself;
+
    private Identity identity; // who am I?
    private EventFactory eventFactory;
    private TCPConnectionsCache connections;
    private TCPServerThread server;
    private Thread serverThread;
    private boolean dead = false;
-
-   public static <T extends ServiceNode> T getThisNodeOrNull(Class<T> nodeType) {
-      if (nodeType.isInstance(myself)) {
-         return nodeType.cast(myself);
-      }
-
-      return null;
-   }
-
-   public static <T extends ServiceNode> T getThisNode(Class<T> nodeType) {
-      return nodeType.cast(myself);
-   }
 
    public static ServiceNode getThisNode() {
       return myself;
@@ -69,18 +36,11 @@ public abstract class ServiceNode implements Node {
       return identity;
    }
 
-   public void setIdentity(Identity ident) {
-      if (ident == null) {
-         throw new IllegalArgumentException("The the node's identity cannot be null.");
-      }
-
-      identity = ident;
+   public EventFactory getEventFactory() {
+      return this.eventFactory;
    }
 
-   // FOR TESTING ONLY
-   public static void setMyself(ServiceNode node) {
-      myself = node;
-   }
+   public abstract void onEvent(Event e);
 
    /**
     * The 'infinite' loop.  Block waiting for a command.  Handle the command, block again.
@@ -100,12 +60,12 @@ public abstract class ServiceNode implements Node {
    /**
     * Java's magic for reading user input.  Unfortunately, there doesn't appear to be a way to support the arrow keys for history.
     */
-   private static String readFromPrompt(String prompt) throws InterruptedException {
+   private String readFromPrompt(String prompt) throws InterruptedException {
       Console c = System.console();
 
       if (c == null) {
          logger.severe("Unable to open system console! Waiting on interrupt.");
-         Thread.sleep(Long.MAX_VALUE); // sleep forever... or until ctl-c interrupts it
+         Thread.currentThread().join(); // sleep forever... or until ctl-c interrupts it
       }
 
       return c.readLine(prompt);
@@ -143,10 +103,11 @@ public abstract class ServiceNode implements Node {
          this.eventFactory = EventFactory.getInstance(this);
          this.connections = new TCPConnectionsCache();
          this.server = new TCPServerThread(port, connections, eventFactory);
-         this.identity = Identity.builder().withHost(this.server.getAddr().getHostName()).withPort(this.server.getPort()).build();
+         this.identity = Identity.builder().withHost(this.server.getAddr().getHostAddress()).withPort(this.server.getPort()).build();
          this.serverThread = new Thread(this.server);
          this.serverThread.start();
          specialStartUp();
+         logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
          runCommandPromptLoop(commands, prompt); // start printing metrics every 20 seconds
       }
       catch (Exception e) {
@@ -178,5 +139,44 @@ public abstract class ServiceNode implements Node {
 
    public TCPConnectionsCache getTcpConnectionsCache() {
       return this.connections;
+   }
+
+   protected static void startup(int port, ServiceNode node, Commands commands, String prompt) {
+      addShutdownHook(node);
+      node.startup(port, commands, prompt);
+   }
+
+   // Close everything nicely when ctl C or the exit command is sent.
+   private static void addShutdownHook(ServiceNode server) {
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+
+         public void run() {
+            try {
+               logger.info("Shutting down...");
+               server.shutdown();
+            }
+            catch (Exception e) {
+               logger.log(Level.SEVERE, "Shutdown failed", e);
+            }
+         }
+      });
+   }
+
+
+
+   public static <T extends ServiceNode> T getThisNodeOrNull(Class<T> nodeType) {
+      if (nodeType.isInstance(myself)) {
+         return nodeType.cast(myself);
+      }
+
+      return null;
+   }
+
+   public static <T extends ServiceNode> T getThisNode(Class<T> nodeType) {
+      return nodeType.cast(myself);
+   }
+
+   public void removeConnection(Identity identity) {
+      this.connections.removeConnection(identity);
    }
 }

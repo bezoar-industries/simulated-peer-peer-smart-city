@@ -134,13 +134,13 @@ public class Utilities {
    /**
     * Close the thing without throwing an exception.  Log it instead.
     */
-   public static void closeQuietly(Closeable thing) {
+   public static void closeQuietly(AutoCloseable thing) {
       try {
          if (thing != null) {
             thing.close();
          }
       }
-      catch (IOException e) {
+      catch (Exception e) {
          logger.log(Level.SEVERE, "The closeable thing didn't close correctly!", e);
       }
    }

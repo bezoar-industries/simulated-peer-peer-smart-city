@@ -9,6 +9,8 @@
 
 package cs555.chiba.wireformats;
 
+import cs555.chiba.service.Identity;
+
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -18,18 +20,15 @@ public class GossipData implements Event{
 
     private final int type = Protocol.GOSSIP_DATA.ordinal();
     private final int SIZE_OF_INT = 4;
-    private UUID senderID;
+    private Identity senderID;
     private String[] devices;
     private Socket socket;
 
     /**
      * This constructor should be used when creating a message
      * that will be sent
-     * @param ID An number representing something
-     * @param currentHop The current number of hops the message has made
-     * @param hopLimit The maximum number of hops this message can make
      */
-    public GossipData(UUID senderID, String[] devices){
+    public GossipData(Identity senderID, String[] devices){
         this.senderID = senderID;
         this.devices = devices;
     }
@@ -43,10 +42,13 @@ public class GossipData implements Event{
     	ByteBuffer b = ByteBuffer.allocate(message.length).put(message);
     	b.rewind();
         b.get();
-        int senderIDlen = b.getInt();
-        byte[] senderIDbytes = new byte[senderIDlen]; 
-        b.get(senderIDbytes);
-        senderID = UUID.fromString(new String(senderIDbytes));
+       int senderIDlen = b.getInt();
+       byte[] senderIDbytes = new byte[senderIDlen];
+       b.get(senderIDbytes);
+       int senderId = b.getInt();
+       byte[] senderBytes = new byte[senderId];
+       b.get(senderBytes);
+       senderID = Identity.builder().withIdentityKey(new String(senderBytes)).build();
         int numDevices = b.getInt();
         devices = new String[numDevices];
         for(int i = 0; i < numDevices; i++) {
@@ -63,7 +65,7 @@ public class GossipData implements Event{
      * @return byte[] The serialized message
      */
     public byte[] getBytes(){
-    	byte[] senderIDbytes = senderID.toString().getBytes();
+       byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
     	int size = senderIDbytes.length + 2*SIZE_OF_INT + 1;
     	for(String device : devices) {
     		byte[] deviceBytes = device.getBytes();
@@ -85,7 +87,7 @@ public class GossipData implements Event{
         return type;
     }
     
-    public UUID getSenderID() {
+    public Identity getSenderID() {
     	return senderID;
     }
     
