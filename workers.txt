@@ -1,0 +1,14 @@
+richmond.cs.colostate.edu
+frankfort.cs.colostate.edu
+madison.cs.colostate.edu
+salt-lake-city.cs.colostate.edu
+little-rock.cs.colostate.edu
+salem.cs.colostate.edu
+montgomery.cs.colostate.edu
+austin.cs.colostate.edu
+sacramento.cs.colostate.edu
+tallahassee.cs.colostate.edu
+saint-paul.cs.colostate.edu
+albany.cs.colostate.edu
+harrisburg.cs.colostate.edu
+jefferson-city.cs.colostate.edu
