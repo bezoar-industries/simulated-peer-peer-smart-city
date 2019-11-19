@@ -177,7 +177,7 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit() || e.getHopLimit() == -1) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
       }
    }
@@ -197,7 +197,7 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          this.getTcpConnectionsCache().sendToRandom(m, e.getSenderID());
       }
    }
@@ -229,7 +229,7 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
          if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
             for (Identity targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
                if (targetID != e.getSenderID())

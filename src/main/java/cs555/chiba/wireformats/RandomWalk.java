@@ -22,6 +22,7 @@ public class RandomWalk implements Event{
     private final int SIZE_OF_INT = 4;
     private UUID ID;
     private Identity senderID;
+    private Identity originatorId;
     private String target;
     private int hopLimit;
     private int currentHop;
@@ -35,12 +36,13 @@ public class RandomWalk implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public RandomWalk(UUID ID, Identity senderID, String target, int currentHop, int hopLimit){
+    public RandomWalk(UUID ID, Identity senderID, Identity originatorId, String target, int currentHop, int hopLimit){
         this.ID = ID;
         this.senderID = senderID;
         this.currentHop = currentHop;
         this.hopLimit = hopLimit;
         this.target = target;
+        this.originatorId = originatorId;
     }
 
     /**
@@ -56,17 +58,22 @@ public class RandomWalk implements Event{
         byte[] IDbytes = new byte[IDlen]; 
         b.get(IDbytes);
         ID = UUID.fromString(new String(IDbytes));
-       int senderIDlen = b.getInt();
-       byte[] senderIDbytes = new byte[senderIDlen];
-       b.get(senderIDbytes);
-       int senderId = b.getInt();
-       byte[] senderBytes = new byte[senderId];
-       b.get(senderBytes);
-       senderID = Identity.builder().withIdentityKey(new String(senderBytes)).build();
+
+        int senderIDlen = b.getInt();
+        byte[] senderIDbytes = new byte[senderIDlen];
+        b.get(senderIDbytes);
+        senderID = Identity.builder().withIdentityKey(new String(senderIDbytes)).build();
+
+        int originatorIdLength = b.getInt();
+        byte[] originatorBytes = new byte[originatorIdLength];
+        b.get(originatorBytes);
+        this.originatorId = Identity.builder().withIdentityKey(new String(originatorBytes)).build();
+
         int targetLen = b.getInt();
         byte[] targetBytes = new byte[targetLen]; 
         b.get(targetBytes);
         target = new String(targetBytes);
+
         currentHop = b.getInt();
         hopLimit = b.getInt();
         totalDevicesWithMetric = b.getInt();
@@ -80,13 +87,16 @@ public class RandomWalk implements Event{
     public byte[] getBytes(){
     	byte[] IDbytes = ID.toString().getBytes();
     	byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
+        byte[] originatorIDbytes = originatorId.getIdentityKey().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+targetBytes.length+6*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+7*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
     	b.putInt(senderIDbytes.length);
     	b.put(senderIDbytes);
+        b.putInt(originatorIDbytes.length);
+        b.put(originatorIDbytes);
     	b.putInt(targetBytes.length);
     	b.put(targetBytes);
     	b.putInt(currentHop);
@@ -129,5 +139,9 @@ public class RandomWalk implements Event{
 
     public void setTotalDevicesWithMetric(int totalDevicesWithMetric) {
         this.totalDevicesWithMetric = totalDevicesWithMetric;
+    }
+
+    public Identity getOriginatorId() {
+        return originatorId;
     }
 }
