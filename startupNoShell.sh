@@ -3,7 +3,7 @@
 
 CURRENT_WORKING_DIR=~/CS555-final
 
-START_CLUSTER="cd $CURRENT_WORKING_DIR; nohup nice -n 19 ./peer.sh 2>&1 &"
+START_CLUSTER="cd $CURRENT_WORKING_DIR; nohup nice -n 19 ./lotsofpeers.sh 2>&1 &"
 
 for cluster in $(cat workers.txt)
 do
