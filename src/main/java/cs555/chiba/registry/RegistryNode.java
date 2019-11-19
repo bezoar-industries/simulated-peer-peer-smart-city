@@ -43,12 +43,13 @@ public class RegistryNode extends ServiceNode {
                resultMetrics = requests.get(randomWalkMessage.getID());
             }
             else {
-               resultMetrics = new ResultMetrics(randomWalkMessage.getID(), 0, 0);
+               resultMetrics = new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0);
             }
 
-            resultMetrics.addTotalNumberOfDevices(randomWalkMessage.getTotalDevicesWithMetric());
+            resultMetrics.addTotalNumberOfDevices(randomWalkMessage.getTotalDevicesChecked());
             resultMetrics.addTotalNumberOfHops(randomWalkMessage.getCurrentHop());
             resultMetrics.setTimeOfLastReceivedResultMessage();
+            resultMetrics.addTotalNumberOfDevicesWithMetric(randomWalkMessage.getTotalDevicesWithMetric());
 
             requests.merge(randomWalkMessage.getID(), resultMetrics, ResultMetrics::merge);
          }
@@ -59,12 +60,13 @@ public class RegistryNode extends ServiceNode {
                resultMetrics = requests.get(gossipQueryMessage.getID());
             }
             else {
-               resultMetrics = new ResultMetrics(gossipQueryMessage.getID(), 0, 0);
+               resultMetrics = new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0);
             }
 
-            resultMetrics.addTotalNumberOfDevices(gossipQueryMessage.getTotalDevicesWithMetric());
+            resultMetrics.addTotalNumberOfDevices(gossipQueryMessage.getTotalDevicesChecked());
             resultMetrics.addTotalNumberOfHops(gossipQueryMessage.getCurrentHop());
             resultMetrics.setTimeOfLastReceivedResultMessage();
+            resultMetrics.addTotalNumberOfDevicesWithMetric(gossipQueryMessage.getTotalDevicesWithMetric());
 
             requests.merge(gossipQueryMessage.getID(), resultMetrics, ResultMetrics::merge);
          }
@@ -76,11 +78,12 @@ public class RegistryNode extends ServiceNode {
                resultMetrics = requests.get(floodMessage.getID());
             }
             else {
-               resultMetrics = new ResultMetrics(floodMessage.getID(), 0, 0);
+               resultMetrics = new ResultMetrics(floodMessage.getID(), 0, 0, 0);
             }
 
-            resultMetrics.addTotalNumberOfDevices(floodMessage.getTotalDevicesWithMetric());
+            resultMetrics.addTotalNumberOfDevices(floodMessage.getTotalDevicesChecked());
             resultMetrics.addTotalNumberOfHops(floodMessage.getCurrentHop());
+            resultMetrics.addTotalNumberOfDevicesWithMetric(floodMessage.getTotalDevicesWithMetric());
             resultMetrics.setTimeOfLastReceivedResultMessage();
 
             requests.merge(floodMessage.getID(), resultMetrics, ResultMetrics::merge);
@@ -92,7 +95,7 @@ public class RegistryNode extends ServiceNode {
    }
 
    public void addRequest(UUID requestId) {
-      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0);
+      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0, 0);
       requests.put(requestId, resultMetrics);
    }
 
