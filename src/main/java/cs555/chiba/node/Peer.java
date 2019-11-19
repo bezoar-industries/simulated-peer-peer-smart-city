@@ -177,7 +177,12 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit() || e.getHopLimit() == -1) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+
+         Flood nextFloodMesage = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextFloodMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextFloodMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextFloodMesage.getBytes();
+         // TODO: we need to not add this node's metrics to every
          this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
       }
    }
@@ -197,7 +202,11 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextRWMesage.getBytes();
+
          this.getTcpConnectionsCache().sendToRandom(m, e.getSenderID());
       }
    }
@@ -229,7 +238,10 @@ public class Peer extends ServiceNode {
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         byte[] m = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit()).getBytes();
+         GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextGossipMesage.getBytes();
          if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
             for (Identity targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
                if (targetID != e.getSenderID())

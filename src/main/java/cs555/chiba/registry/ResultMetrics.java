@@ -8,14 +8,16 @@ public class ResultMetrics {
     private UUID requestId;
     private int totalNumberOfHops;
     private int totalNumberOfDevices;
+    private int totalNumberOfDevicesWithMetric;
     private Date timeQueryStarted;
     private Date timeOfLastReceivedResultMessage;
 
-    public ResultMetrics(UUID requestId, int totalNumberOfHops, int totalNumberOfDevices) {
+    public ResultMetrics(UUID requestId, int totalNumberOfHops, int totalNumberOfDevices, int totalNumberOfDevicesWithMetric) {
         this.requestId = requestId;
         this.totalNumberOfHops = totalNumberOfHops;
         this.totalNumberOfDevices = totalNumberOfDevices;
         this.timeQueryStarted = new Date();
+        this.totalNumberOfDevicesWithMetric = totalNumberOfDevicesWithMetric;
     }
 
     public UUID getRequestId() {
@@ -50,6 +52,14 @@ public class ResultMetrics {
         return timeOfLastReceivedResultMessage;
     }
 
+    public int getTotalNumberOfDevicesWithMetric() {
+        return totalNumberOfDevicesWithMetric;
+    }
+
+    public void addTotalNumberOfDevicesWithMetric(int totalNumberOfDevicesWithMetric) {
+        this.totalNumberOfDevicesWithMetric += totalNumberOfDevicesWithMetric;
+    }
+
     public void setTimeOfLastReceivedResultMessage() {
         this.timeOfLastReceivedResultMessage = new Date();
     }
@@ -58,6 +68,7 @@ public class ResultMetrics {
         rm1.addTotalNumberOfHops(rm2.getTotalNumberOfHops());
         rm1.addTotalNumberOfDevices(rm2.getTotalNumberOfDevices());
         rm1.setTimeOfLastReceivedResultMessage();
+        rm1.addTotalNumberOfDevicesWithMetric(rm2.getTotalNumberOfDevicesWithMetric());
         return rm1;
     }
 }

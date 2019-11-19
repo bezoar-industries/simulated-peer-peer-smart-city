@@ -28,6 +28,7 @@ public class Flood implements Event{
     private int currentHop;
     private Socket socket;
     private int totalDevicesWithMetric = 0;
+    private int totalDevicesChecked = 0;
 
     /**
      * This constructor should be used when creating a message
@@ -77,6 +78,7 @@ public class Flood implements Event{
         currentHop = b.getInt();
         hopLimit = b.getInt();
         totalDevicesWithMetric = b.getInt();
+        totalDevicesChecked = b.getInt();
         this.socket = socket;
     }
 
@@ -89,7 +91,7 @@ public class Flood implements Event{
     	byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
         byte[] originatorIDbytes = originatorId.getIdentityKey().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+7*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+8*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
@@ -102,6 +104,7 @@ public class Flood implements Event{
     	b.putInt(currentHop);
     	b.putInt(hopLimit);
     	b.putInt(totalDevicesWithMetric);
+    	b.putInt(totalDevicesChecked);
         return b.array();
     }
 
@@ -137,8 +140,16 @@ public class Flood implements Event{
         return totalDevicesWithMetric;
     }
 
+    public int getTotalDevicesChecked() {
+        return totalDevicesChecked;
+    }
+
     public void setTotalDevicesWithMetric(int totalDevicesWithMetric) {
         this.totalDevicesWithMetric = totalDevicesWithMetric;
+    }
+
+    public void setTotalDevicesChecked(int totalDevicesChecked) {
+        this.totalDevicesChecked = totalDevicesChecked;
     }
 
     public Identity getOriginatorId() {
