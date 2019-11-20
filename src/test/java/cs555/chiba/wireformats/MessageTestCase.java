@@ -24,7 +24,7 @@ import static org.mockito.Mockito.doAnswer;
 
 public abstract class MessageTestCase {
 
-   private Message result = null;  // this is cheating.  Don't do this.
+   private static Message result = null;  // this is cheating.  Don't do this.
 
    Answer grabMessage = new Answer() {
       public Object answer(InvocationOnMock invocation) throws Throwable {

@@ -9,16 +9,15 @@
 
 package cs555.chiba.transport;
 
+import cs555.chiba.service.Identity;
+import cs555.chiba.wireformats.EventFactory;
+
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import cs555.chiba.service.Identity;
-import cs555.chiba.wireformats.EventFactory;
 
 
 public class TCPServerThread implements Runnable, AutoCloseable {
