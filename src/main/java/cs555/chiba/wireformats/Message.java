@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class Message implements Event {
 
@@ -77,5 +78,22 @@ public abstract class Message implements Event {
       }
 
       return identities;
+   }
+
+   @Override public boolean equals(Object o) {
+      if (this == o)
+         return true;
+      if (o == null || getClass() != o.getClass())
+         return false;
+      Message message = (Message) o;
+      return type == message.type;
+   }
+
+   @Override public int hashCode() {
+      return Objects.hash(type);
+   }
+
+   @Override public String toString() {
+      return "Message{" + "type=" + type + '}';
    }
 }

@@ -66,6 +66,9 @@ public class EventFactory {
          case INITIATE_CONNECTIONS:
             this.n.onEvent(new InitiateConnectionsMessage(message));
             break;
+         case SHUTDOWN:
+            this.n.onEvent(new ShutdownMessage(message));
+            break;
          default:
             System.out.println("Event Factory cannot recognize message type [" + type + "]");
       }

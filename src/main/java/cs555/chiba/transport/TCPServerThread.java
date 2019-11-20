@@ -51,6 +51,7 @@ public class TCPServerThread implements Runnable, AutoCloseable {
                 //Wait for incoming connection. Add receiver to the cache when one comes in
                 Socket socket = server.accept();
                 Identity ident = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
+                // the sender thread side of this is created after the introduction message is received
                 connections.addReceiverThread(ident, new TCPReceiverThread(socket, factory));
             } catch (Exception e){
                 if (!this.dead) {

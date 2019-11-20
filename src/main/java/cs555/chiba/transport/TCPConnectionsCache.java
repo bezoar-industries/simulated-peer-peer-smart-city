@@ -38,7 +38,7 @@ public class TCPConnectionsCache implements AutoCloseable {
    /**
     * Adds a receiver thread to the cache
     */
-   public void addReceiverThread(Identity ident, TCPReceiverThread receiver) {
+   void addReceiverThread(Identity ident, TCPReceiverThread receiver) {
       Thread receiverThread = new Thread(receiver);
       receiverThread.start();
       TCPReceiverThread old = this.receiverThreads.putIfAbsent(ident, receiver);

@@ -23,6 +23,7 @@ import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.IntroductionMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.RegisterMessage;
+import cs555.chiba.wireformats.ShutdownMessage;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -286,6 +287,9 @@ public class Peer extends ServiceNode {
       }
       else if (e instanceof IntroductionMessage) {
          handle((IntroductionMessage) e);
+      }
+      else if (e instanceof ShutdownMessage) {
+         ServiceNode.getThisNode().shutdown();
       }
       else {
          logger.severe("Cannot handle message [" + e.getClass().getSimpleName() + "]");
