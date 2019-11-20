@@ -4,11 +4,14 @@ import cs555.chiba.overlay.network.NetworkMap;
 import cs555.chiba.overlay.network.NetworkMapTransformer;
 import cs555.chiba.overlay.network.Vertex;
 import cs555.chiba.service.Commands;
+import cs555.chiba.service.Identity;
+import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.RandomWalk;
+import cs555.chiba.wireformats.ShutdownMessage;
 
 import java.io.File;
 import java.util.List;
@@ -98,6 +101,11 @@ class RegistryCommands {
          return null;
       });
 
+      builder.registerCommand("shutdown", args -> { // connect the peers
+         shutdown(registryNode);
+         return null;
+      });
+
       return builder.build();
    }
 
@@ -116,7 +124,7 @@ class RegistryCommands {
    }
 
    private static void sendFloodingRequest(String metric, RegistryNode registryNode) {
-      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(),registryNode.getIdentity(), metric, 0, 10);
+      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10);
       registryNode.addRequest(request.getID());
       logger.info("Sending Flooding request");
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
@@ -128,9 +136,11 @@ class RegistryCommands {
     */
    private static String listPeers(RegistryNode registryNode) {
       StringBuffer out = new StringBuffer("Registered Peers: \n");
-      registryNode.getRegistry().listRegisteredPeers().forEach(ident -> {
+      List<Identity> peers = registryNode.getRegistry().listRegisteredPeers();
+      peers.forEach(ident -> {
          out.append(ident.getIdentityKey()).append("\n");
       });
+      out.append("Total Registered Peers: ").append(peers.size()).append("\n");
 
       return out.toString();
    }
@@ -212,5 +222,25 @@ class RegistryCommands {
       }
 
       logger.info("Finished connecting peers.  If any failed, rerun this command. \n");
+   }
+
+   private static void shutdown(RegistryNode registryNode) {
+      logger.info("Shutting Down Peers: \n");
+
+      List<Identity> peers = registryNode.getRegistry().listRegisteredPeers();
+
+      for (Identity peer : peers) {
+         try {
+            logger.info("Shutting down peer: [" + peer.getIdentityKey() + "] \n");
+            ShutdownMessage message = new ShutdownMessage();
+            registryNode.getTcpConnectionsCache().sendSingle(peer, message.getBytes());
+         }
+         catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to shutdown peer: [" + peer + "]", e);
+         }
+      }
+
+      logger.info("Finished shutting down peers.\n");
+      ServiceNode.getThisNode().shutdown();
    }
 }
