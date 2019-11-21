@@ -18,6 +18,7 @@ import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipData;
+import cs555.chiba.wireformats.GossipEntries;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.IntroductionMessage;
@@ -30,6 +31,8 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -42,6 +45,7 @@ public class Peer extends ServiceNode {
    private Identity registryId;
    private LRUCache queryIDCache;
    private LRUCache gossipCache;
+   private LRUCache gossipEntries;
    private HashMap<UUID, Metric> metrics;
    private List<IotDevice> connectedIotDevices;
 
@@ -50,8 +54,12 @@ public class Peer extends ServiceNode {
       this.registryId = Identity.builder().withHost(registryHost).withPort(registryPort).build();
       this.createIotNetwork(numberOfIoTDevices);
 
-      this.queryIDCache = new LRUCache(1000);
-      this.gossipCache = new LRUCache(1000);
+      this.queryIDCache = new LRUCache(40);
+      this.gossipCache = new LRUCache(40);
+      this.gossipEntries = new LRUCache(40);
+      for(IotDevice d : connectedIotDevices) {
+    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
+      }
       this.metrics = new HashMap<>();
    }
 
@@ -214,15 +222,28 @@ public class Peer extends ServiceNode {
 
    private void handle(GossipData e) {
       boolean updated = false;
-      logger.info("Received gossip query from: " + e.getSenderID());
-      for (String device : e.getDevices()) {
-         if (gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(device.getBytes()), device, e.getSenderID()))
+      logger.info("Received gossip data from: " + e.getSenderID());
+      for (Map.Entry<String, Integer> device : e.getDevices().entrySet()) {
+         if (gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(device.getKey().getBytes()), device.getKey(), device.getValue()+1, e.getSenderID()))
             updated = true;
       }
       if (updated) {
          byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
          this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
       }
+   }
+   
+   private void handle(GossipEntries e) {
+	   boolean updated = false;
+	   logger.info("Received gossip entries from: " + e.getSenderID());
+	   for (Map.Entry<Identity,String> device : e.getDevices().entrySet()) {
+	      if (gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.getKey().getIdentityKey()+device.getValue()).getBytes()), device.getKey(), device.getValue(), 0.01))
+	         updated = true;
+	   }
+	   if (updated) {
+	      byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
+	      this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
+	   }
    }
 
    private void handle(GossipQuery e) {
@@ -232,22 +253,30 @@ public class Peer extends ServiceNode {
          return;
       }
 
-      logger.info("Received gossip message with ID: " + e.getID());
+      logger.info("Received gossip query with ID: " + e.getID());
       queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
       metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
-         GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), e.getGossipType());
          nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
          nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
          byte[] m = nextGossipMesage.getBytes();
-         if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
-            for (Identity targetID : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList) {
-               if (targetID != e.getSenderID())
-                  this.getTcpConnectionsCache().send(targetID, m);
-            }
+         if(e.getGossipType() == 0) {
+	         if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
+	            for (Entry<Identity, Integer> entry : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList.entrySet()) {
+	               if (entry.getKey() != e.getSenderID() && entry.getKey() != this.getIdentity() && entry.getValue() < e.getHopLimit()-e.getCurrentHop())
+	                  this.getTcpConnectionsCache().send(entry.getKey(), m);
+	            }
+	         }
+         } else if(e.getGossipType() == 1) {
+        	 for(cs555.chiba.util.LRUCache.Entry entry : gossipEntries.getHashmap().values()) {
+        		 if(entry.keyName.contentEquals(e.getTarget())) {
+        			 this.getTcpConnectionsCache().sendSingle(entry.value, m);
+        		 }
+        	 }
          }
       }
    }
@@ -279,6 +308,9 @@ public class Peer extends ServiceNode {
       else if (e instanceof GossipData) {
          handle((GossipData) e);
       }
+      else if (e instanceof GossipEntries) {
+          handle((GossipEntries) e);
+       }
       else if (e instanceof GossipQuery) {
          handle((GossipQuery) e);
       }

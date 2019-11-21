@@ -17,19 +17,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class GossipData implements Event{
+public class GossipEntries implements Event{
 
-    private final int type = Protocol.GOSSIP_DATA.ordinal();
+    private final int type = Protocol.GOSSIP_ENTRIES.ordinal();
     private final int SIZE_OF_INT = 4;
     private Identity senderID;
-    private HashMap<String,Integer> devices;
+    private HashMap<Identity,String> devices;
     private Socket socket;
 
     /**
      * This constructor should be used when creating a message
      * that will be sent
      */
-    public GossipData(Identity senderID, HashMap<String,Integer> devices){
+    public GossipEntries(Identity senderID, HashMap<Identity,String> devices){
         this.senderID = senderID;
         this.devices = devices;
     }
@@ -39,7 +39,7 @@ public class GossipData implements Event{
      * @param message The serialized message
      * @param socket  The socket this message was received from
      */
-    public GossipData(byte[] message, Socket socket){ 
+    public GossipEntries(byte[] message, Socket socket){ 
     	ByteBuffer b = ByteBuffer.allocate(message.length).put(message);
     	b.rewind();
         b.get();
@@ -51,13 +51,15 @@ public class GossipData implements Event{
        b.get(senderBytes);
        senderID = Identity.builder().withIdentityKey(new String(senderBytes)).build();
         int numDevices = b.getInt();
-        devices = new HashMap<String,Integer>();
+        devices = new HashMap<Identity,String>();
         for(int i = 0; i < numDevices; i++) {
+        	int identityLength = b.getInt();
+        	byte[] identityBytes = new byte[identityLength]; 
+        	b.get(identityBytes);
         	int deviceLength = b.getInt();
         	byte[] deviceBytes = new byte[deviceLength]; 
         	b.get(deviceBytes);
-        	int dist = b.getInt();
-        	devices.put(new String(deviceBytes), dist);
+        	devices.put(Identity.builder().withIdentityKey(new String(identityBytes)).build(), new String(deviceBytes));
         }
         this.socket = socket;
     }
@@ -69,19 +71,22 @@ public class GossipData implements Event{
     public byte[] getBytes(){
        byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
     	int size = senderIDbytes.length + 2*SIZE_OF_INT + 1;
-    	for(Map.Entry<String, Integer> device : devices.entrySet()) {
-    		byte[] deviceBytes = device.getKey().getBytes();
-    		size += deviceBytes.length + 2*SIZE_OF_INT;
+    	for(Map.Entry<Identity,String> device : devices.entrySet()) {
+    		byte[] entryBytes = device.getKey().getIdentityKey().getBytes();
+    		size += entryBytes.length + SIZE_OF_INT;
+    		byte[] deviceBytes = device.getValue().getBytes();
+    		size += deviceBytes.length + SIZE_OF_INT;
     	}
     	ByteBuffer b = ByteBuffer.allocate(size);
     	b.put((byte)type);
     	b.putInt(senderIDbytes.length);
     	b.put(senderIDbytes);
     	b.putInt(devices.size());
-    	for(Map.Entry<String, Integer> device : devices.entrySet()) {
-    		b.putInt(device.getKey().getBytes().length);
-    		b.put(device.getKey().getBytes());
-    		b.putInt(device.getValue());
+    	for(Map.Entry<Identity,String> device : devices.entrySet()) {
+    		b.putInt(device.getKey().getIdentityKey().getBytes().length);
+    		b.put(device.getKey().getIdentityKey().getBytes());
+    		b.putInt(device.getValue().getBytes().length);
+    		b.put(device.getValue().getBytes());
     	}
         return b.array();
     }
@@ -94,10 +99,10 @@ public class GossipData implements Event{
     	return senderID;
     }
     
-    public HashMap<String,Integer> getDevices() {
+    public HashMap<Identity,String> getDevices() {
     	return devices;
     }
-    
+
     public Socket getSocket() {
     	return socket;
     }

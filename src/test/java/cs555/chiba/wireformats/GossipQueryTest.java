@@ -16,7 +16,7 @@ public class GossipQueryTest {
                 UUID.randomUUID(),
                 Identity.builder().withIdentityKey("testSender.com:8989").build(),
                 Identity.builder().withIdentityKey("testOriginator.com:8989").build(),
-                "temp", 1, 10);
+                "temp", 1, 10, 0);
 
         byte[] messageAsBytes = message.getBytes();
 
@@ -28,6 +28,7 @@ public class GossipQueryTest {
         assertEquals(retranslatedMessage.getOriginatorId(), message.getOriginatorId());
         assertEquals(retranslatedMessage.getSenderID(), message.getSenderID());
         assertEquals(retranslatedMessage.getTarget(), message.getTarget());
+        assertEquals(retranslatedMessage.getGossipType(), message.getGossipType());
 
     }
 

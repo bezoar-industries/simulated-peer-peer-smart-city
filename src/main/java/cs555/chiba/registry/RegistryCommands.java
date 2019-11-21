@@ -53,14 +53,23 @@ class RegistryCommands {
          return null;
       });
 
-      builder.registerCommand("gossip", args -> {
+      builder.registerCommand("gossiptype0", args -> {
          if (!Utilities.checkArgCount(1, args)) {
-            throw new IllegalArgumentException("Gossiping requires 1 argument:  " + "metric-to-collect");
+            throw new IllegalArgumentException("Gossiping type 0 requires 1 argument:  " + "metric-to-collect");
          }
 
-         sendGossipingRequest(args[0], registryNode);
+         sendGossipingRequest(args[0], registryNode, 0);
          return null;
       });
+      
+      builder.registerCommand("gossiptype1", args -> {
+          if (!Utilities.checkArgCount(1, args)) {
+             throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect");
+          }
+
+          sendGossipingRequest(args[0], registryNode, 1);
+          return null;
+       });
 
       builder.registerCommand("buildoverlay", args -> { // build a random overlay with the current peers
          if (!Utilities.checkArgCount(2, args)) {
@@ -116,8 +125,8 @@ class RegistryCommands {
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
    }
 
-   private static void sendGossipingRequest(String metric, RegistryNode registryNode) {
-      GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10);
+   private static void sendGossipingRequest(String metric, RegistryNode registryNode, int type) {
+      GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10, type);
       registryNode.addRequest(request.getID());
       logger.info("Sending Gossiping request");
       registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());

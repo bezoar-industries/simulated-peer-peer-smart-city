@@ -20,6 +20,7 @@ public class GossipQuery implements Event{
 
     private final int type = Protocol.GOSSIP_QUERY.ordinal();
     private final int SIZE_OF_INT = 4;
+    private int gossipType;
     private UUID ID;
     private Identity senderID;
     private Identity originatorId;
@@ -37,13 +38,14 @@ public class GossipQuery implements Event{
      * @param currentHop The current number of hops the message has made
      * @param hopLimit The maximum number of hops this message can make
      */
-    public GossipQuery(UUID ID, Identity senderID, Identity originatorId, String target, int currentHop, int hopLimit){
+    public GossipQuery(UUID ID, Identity senderID, Identity originatorId, String target, int currentHop, int hopLimit, int gossipType){
         this.ID = ID;
         this.senderID = senderID;
         this.currentHop = currentHop;
         this.hopLimit = hopLimit;
         this.target = target;
         this.originatorId = originatorId;
+        this.gossipType = gossipType;
     }
 
     /**
@@ -79,6 +81,7 @@ public class GossipQuery implements Event{
         hopLimit = b.getInt();
         totalDevicesWithMetric = b.getInt();
         totalDevicesChecked = b.getInt();
+        gossipType = b.getInt();
         this.socket = socket;
     }
 
@@ -91,7 +94,7 @@ public class GossipQuery implements Event{
     	byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
         byte[] originatorIDbytes = originatorId.getIdentityKey().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+8*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+9*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);
@@ -105,6 +108,7 @@ public class GossipQuery implements Event{
     	b.putInt(hopLimit);
     	b.putInt(totalDevicesWithMetric);
     	b.putInt(totalDevicesChecked);
+    	b.putInt(gossipType);
         return b.array();
     }
 
@@ -118,6 +122,10 @@ public class GossipQuery implements Event{
     
     public Identity getSenderID() {
     	return senderID;
+    }
+    
+    public int getGossipType() {
+    	return gossipType;
     }
     
     public String getTarget() {
