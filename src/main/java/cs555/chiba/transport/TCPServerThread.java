@@ -9,16 +9,15 @@
 
 package cs555.chiba.transport;
 
+import cs555.chiba.service.Identity;
+import cs555.chiba.wireformats.EventFactory;
+
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import cs555.chiba.service.Identity;
-import cs555.chiba.wireformats.EventFactory;
 
 
 public class TCPServerThread implements Runnable, AutoCloseable {
@@ -51,6 +50,7 @@ public class TCPServerThread implements Runnable, AutoCloseable {
                 //Wait for incoming connection. Add receiver to the cache when one comes in
                 Socket socket = server.accept();
                 Identity ident = Identity.builder().withSocketAddress(socket.getRemoteSocketAddress()).build();
+                // the sender thread side of this is created after the introduction message is received
                 connections.addReceiverThread(ident, new TCPReceiverThread(socket, factory));
             } catch (Exception e){
                 if (!this.dead) {

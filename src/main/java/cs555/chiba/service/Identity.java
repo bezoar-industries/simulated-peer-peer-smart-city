@@ -199,7 +199,7 @@ public class Identity {
             Utilities.checkArgument(this.port == this.socketAddress.getPort(), "The socket address [" + this.socketAddress + "] doesn't match the port [" + this.port + "]");
          }
          else {
-            this.socketAddress = new InetSocketAddress(this.host, this.port);
+            this.socketAddress = InetSocketAddress.createUnresolved(this.host, this.port);
          }
       }
    }
