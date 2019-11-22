@@ -91,7 +91,8 @@ public class Flood implements Event{
     	byte[] senderIDbytes = senderID.getIdentityKey().getBytes();
         byte[] originatorIDbytes = originatorId.getIdentityKey().getBytes();
     	byte[] targetBytes = target.getBytes();
-    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes.length+8*SIZE_OF_INT+1);
+    	ByteBuffer b = ByteBuffer.allocate(IDbytes.length+senderIDbytes.length+originatorIDbytes.length+targetBytes
+                .length+8*SIZE_OF_INT+1);
     	b.put((byte)type);
     	b.putInt(IDbytes.length);
     	b.put(IDbytes);

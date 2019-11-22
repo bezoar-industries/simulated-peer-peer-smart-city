@@ -7,7 +7,7 @@ import cs555.chiba.wireformats.RegisterMessage;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -45,5 +45,11 @@ public class RegisteredPeers {
    public List<Identity> listRegisteredPeers() {
       // changes to keySet are reflected in the map, so let's make a copy
       return Utilities.copy(this.registry.keySet());
+   }
+
+   public Identity getRandomPeer() {
+      Random generator = new Random();
+      Object[] values = registry.keySet().toArray();
+      return (Identity) values[generator.nextInt(values.length)];
    }
 }

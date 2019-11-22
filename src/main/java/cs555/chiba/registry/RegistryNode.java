@@ -37,56 +37,36 @@ public class RegistryNode extends ServiceNode {
             handle((RegisterMessage) event);
          }
          else if (event instanceof RandomWalk) {
+            System.out.println("received a RandomWalk result message");
             RandomWalk randomWalkMessage = (RandomWalk) event;
-            ResultMetrics resultMetrics;
             if (requests.containsKey(randomWalkMessage.getID())) {
-               resultMetrics = requests.get(randomWalkMessage.getID());
-            }
-            else {
-               resultMetrics = new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0);
+               this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0,
+                       "randomWalk"));
             }
 
-            resultMetrics.addTotalNumberOfDevices(randomWalkMessage.getTotalDevicesChecked());
-            resultMetrics.addTotalNumberOfHops(randomWalkMessage.getCurrentHop());
-            resultMetrics.setTimeOfLastReceivedResultMessage();
-            resultMetrics.addTotalNumberOfDevicesWithMetric(randomWalkMessage.getTotalDevicesWithMetric());
-
-            requests.merge(randomWalkMessage.getID(), resultMetrics, ResultMetrics::merge);
+            requests.get(randomWalkMessage.getID()).addResult(randomWalkMessage.getCurrentHop(), randomWalkMessage
+                    .getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric());
          }
          else if (event instanceof GossipQuery) {
+            System.out.println("received a GossipQuery result message");
             GossipQuery gossipQueryMessage = (GossipQuery) event;
-            ResultMetrics resultMetrics;
-            if (requests.containsKey(gossipQueryMessage.getID())) {
-               resultMetrics = requests.get(gossipQueryMessage.getID());
-            }
-            else {
-               resultMetrics = new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0);
+            if (!requests.containsKey(gossipQueryMessage.getID())) {
+               this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage
+                       .getID(), 0, 0, 0, "gossip"));
             }
 
-            resultMetrics.addTotalNumberOfDevices(gossipQueryMessage.getTotalDevicesChecked());
-            resultMetrics.addTotalNumberOfHops(gossipQueryMessage.getCurrentHop());
-            resultMetrics.setTimeOfLastReceivedResultMessage();
-            resultMetrics.addTotalNumberOfDevicesWithMetric(gossipQueryMessage.getTotalDevicesWithMetric());
-
-            requests.merge(gossipQueryMessage.getID(), resultMetrics, ResultMetrics::merge);
+            requests.get(gossipQueryMessage.getID()).addResult(gossipQueryMessage.getCurrentHop(), gossipQueryMessage
+                    .getTotalDevicesChecked(), gossipQueryMessage.getTotalDevicesWithMetric());
          }
          else if (event instanceof Flood) {
             Flood floodMessage = (Flood) event;
 
-            ResultMetrics resultMetrics;
-            if (requests.containsKey(floodMessage.getID())) {
-               resultMetrics = requests.get(floodMessage.getID());
-            }
-            else {
-               resultMetrics = new ResultMetrics(floodMessage.getID(), 0, 0, 0);
+            if (!requests.containsKey(floodMessage.getID())) {
+               this.requests.put(floodMessage.getID(), new ResultMetrics(floodMessage.getID(), 0, 0, 0, "flood"));
             }
 
-            resultMetrics.addTotalNumberOfDevices(floodMessage.getTotalDevicesChecked());
-            resultMetrics.addTotalNumberOfHops(floodMessage.getCurrentHop());
-            resultMetrics.addTotalNumberOfDevicesWithMetric(floodMessage.getTotalDevicesWithMetric());
-            resultMetrics.setTimeOfLastReceivedResultMessage();
-
-            requests.merge(floodMessage.getID(), resultMetrics, ResultMetrics::merge);
+            this.requests.get(floodMessage.getID()).addResult(floodMessage.getCurrentHop(), floodMessage
+                    .getTotalDevicesChecked(), floodMessage.getTotalDevicesWithMetric());
          }
          else {
             logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
@@ -94,8 +74,8 @@ public class RegistryNode extends ServiceNode {
       }
    }
 
-   public void addRequest(UUID requestId) {
-      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0, 0);
+   public void addRequest(UUID requestId, String type) {
+      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0, 0, type);
       requests.put(requestId, resultMetrics);
    }
 
@@ -122,6 +102,10 @@ public class RegistryNode extends ServiceNode {
 
    public int getPort() {
       return this.port;
+   }
+
+   public ConcurrentHashMap<UUID, ResultMetrics> getRequests() {
+      return requests;
    }
 
    public static void main(String[] args) {

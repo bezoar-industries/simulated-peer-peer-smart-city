@@ -28,13 +28,7 @@ import cs555.chiba.wireformats.ShutdownMessage;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -176,6 +170,14 @@ public class Peer extends ServiceNode {
       if (queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - ignore it
          queryIDCache.putEntry(e.getID(), e.getSenderID());
+
+         Flood nextFloodMesage = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextFloodMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextFloodMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextFloodMesage.getBytes();
+
+         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+
          return;
       }
 
@@ -191,8 +193,27 @@ public class Peer extends ServiceNode {
          nextFloodMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
          nextFloodMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
          byte[] m = nextFloodMesage.getBytes();
-         // TODO: we need to not add this node's metrics to every
-         this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
+         Identity randomNode = this.getTcpConnectionsCache().getRandomSender().getIdentity();
+         this.getTcpConnectionsCache().sendSingle(randomNode, m);
+
+         List<Identity> nodesToExclude = new ArrayList<>();
+         nodesToExclude.add(randomNode);
+         nodesToExclude.add(e.getSenderID());
+
+         nextFloodMesage = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextFloodMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+         nextFloodMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+
+         this.getTcpConnectionsCache().sendAll(m, nodesToExclude);
+      } else {
+         // No more hops for the flooding to take
+         Flood nextFloodMesage = new Flood(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextFloodMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextFloodMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextFloodMesage.getBytes();
+
+         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+
       }
    }
 
@@ -217,6 +238,14 @@ public class Peer extends ServiceNode {
          byte[] m = nextRWMesage.getBytes();
 
          this.getTcpConnectionsCache().sendToRandom(m, e.getSenderID());
+      } else {
+         // no more walking...
+         RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextRWMesage.getBytes();
+
+         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
       }
    }
 
@@ -250,6 +279,15 @@ public class Peer extends ServiceNode {
       if (queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - ignore it
          queryIDCache.putEntry(e.getID(), e.getSenderID());
+
+         GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e
+                 .getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
+         nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextGossipMesage.getBytes();
+
+         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+
          return;
       }
 
@@ -266,7 +304,7 @@ public class Peer extends ServiceNode {
          byte[] m = nextGossipMesage.getBytes();
          if(e.getGossipType() == 0) {
 	         if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
-	            for (Entry<Identity, Integer> entry : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList.entrySet()) {
+	            for (Map.Entry<Identity, Integer> entry : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList.entrySet()) {
 	               if (entry.getKey() != e.getSenderID() && entry.getKey() != this.getIdentity() && entry.getValue() < e.getHopLimit()-e.getCurrentHop())
 	                  this.getTcpConnectionsCache().send(entry.getKey(), m);
 	            }
@@ -278,6 +316,14 @@ public class Peer extends ServiceNode {
         		 }
         	 }
          }
+      } else {
+         GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e
+                 .getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
+         nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         byte[] m = nextGossipMesage.getBytes();
+
+         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
       }
    }
 

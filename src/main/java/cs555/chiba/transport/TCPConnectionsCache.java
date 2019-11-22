@@ -191,6 +191,18 @@ public class TCPConnectionsCache implements AutoCloseable {
       }
    }
 
+   /**
+    * Convenience to send a message over every connection in the cache
+    * except those in list
+    * @param message The serialized message to be sent
+    */
+   public void sendAll(byte[] message, List<Identity> exclude) {
+      for (Identity key : senders.keySet()) {
+         if (!exclude.contains(key))
+            this.send(key, message);
+      }
+   }
+
    public List<String> listConnections() {
       return Collections.list(this.receiverThreads.keys()).stream().map(Identity::getIdentityKey).collect(Collectors.toList());
    }
