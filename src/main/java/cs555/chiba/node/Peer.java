@@ -282,8 +282,8 @@ public class Peer extends ServiceNode {
 
          GossipQuery nextGossipMesage = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e
                  .getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
-         nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
-         nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         nextGossipMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+         nextGossipMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
          byte[] m = nextGossipMesage.getBytes();
 
          this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);

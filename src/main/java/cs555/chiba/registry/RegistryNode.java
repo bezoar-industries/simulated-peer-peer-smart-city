@@ -37,7 +37,6 @@ public class RegistryNode extends ServiceNode {
             handle((RegisterMessage) event);
          }
          else if (event instanceof RandomWalk) {
-            System.out.println("received a RandomWalk result message");
             RandomWalk randomWalkMessage = (RandomWalk) event;
             if (requests.containsKey(randomWalkMessage.getID())) {
                this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0,
@@ -48,7 +47,6 @@ public class RegistryNode extends ServiceNode {
                     .getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric());
          }
          else if (event instanceof GossipQuery) {
-            System.out.println("received a GossipQuery result message");
             GossipQuery gossipQueryMessage = (GossipQuery) event;
             if (!requests.containsKey(gossipQueryMessage.getID())) {
                this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage
