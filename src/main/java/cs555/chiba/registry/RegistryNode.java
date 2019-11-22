@@ -106,6 +106,10 @@ public class RegistryNode extends ServiceNode {
       return requests;
    }
 
+   public void clearRequests() {
+      requests = new ConcurrentHashMap<>();
+   }
+
    public static void main(String[] args) {
       try {
          RegistryNode node = parseArguments(args);

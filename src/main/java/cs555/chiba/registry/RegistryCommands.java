@@ -120,6 +120,11 @@ class RegistryCommands {
          return null;
       });
 
+      builder.registerCommand("clear-results", args -> {
+         registryNode.clearRequests();
+         return null;
+      });
+
       return builder.build();
    }
 
