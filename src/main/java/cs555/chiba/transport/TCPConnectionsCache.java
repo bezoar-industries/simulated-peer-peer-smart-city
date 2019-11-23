@@ -158,14 +158,16 @@ public class TCPConnectionsCache implements AutoCloseable {
     */
    public void sendToRandom(byte[] message, Identity exclude) {
       Random generator = new Random();
-      Object[] keys = senders.keySet().toArray();
 
-      Identity key;
-      do {
-         key = (Identity) keys[generator.nextInt(keys.length)];
-      } while (!key.equals(exclude));
+      ConcurrentHashMap<Identity, TCPSender> clonedListOfSenders = new ConcurrentHashMap<>(this.senders);
+      clonedListOfSenders.remove(exclude);
+
+      Object[] keys = clonedListOfSenders.keySet().toArray();
+
+      Identity key = (Identity) keys[generator.nextInt(keys.length)];
 
       TCPSender randomSender = senders.get(key);
+
       randomSender.addMessage(message);
    }
 
@@ -188,6 +190,18 @@ public class TCPConnectionsCache implements AutoCloseable {
       for (Identity key : senders.keySet()) {
          if (key != exclude)
             this.send(key, message); // note, the registry is not stored in the senders list
+      }
+   }
+
+   /**
+    * Convenience to send a message over every connection in the cache
+    * except those in list
+    * @param message The serialized message to be sent
+    */
+   public void sendAll(byte[] message, List<Identity> exclude) {
+      for (Identity key : senders.keySet()) {
+         if (!exclude.contains(key))
+            this.send(key, message);
       }
    }
 

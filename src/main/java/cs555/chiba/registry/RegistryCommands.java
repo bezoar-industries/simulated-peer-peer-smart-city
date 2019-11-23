@@ -115,28 +115,39 @@ class RegistryCommands {
          return null;
       });
 
+      builder.registerCommand("print-results", args -> {
+         System.out.println(registryNode.getRequests());
+         return null;
+      });
+
+      builder.registerCommand("clear-results", args -> {
+         registryNode.clearRequests();
+         return null;
+      });
+
       return builder.build();
    }
 
    private static void sendRandomWalkRequest(String metric, RegistryNode registryNode) {
       RandomWalk request = new RandomWalk(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10);
-      registryNode.addRequest(request.getID());
+      registryNode.addRequest(request.getID(), "randomWalk");
       logger.info("Sending random Walk request");
-      registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
+      registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
    }
 
    private static void sendGossipingRequest(String metric, RegistryNode registryNode, int type) {
       GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10, type);
-      registryNode.addRequest(request.getID());
+      registryNode.addRequest(request.getID(), "gossip");
       logger.info("Sending Gossiping request");
-      registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
+      registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
    }
 
    private static void sendFloodingRequest(String metric, RegistryNode registryNode) {
-      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10);
-      registryNode.addRequest(request.getID());
+      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric,
+              0, 4);
+      registryNode.addRequest(request.getID(), "flood");
       logger.info("Sending Flooding request");
-      registryNode.getTcpConnectionsCache().sendToRandom(request.getBytes());
+      registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
    }
 
    /**

@@ -103,4 +103,8 @@ public class TCPSender implements Runnable, AutoCloseable {
    public Socket getSocket() {
       return socket;
    }
+
+   public Identity getIdentity() {
+      return identity;
+   }
 }
