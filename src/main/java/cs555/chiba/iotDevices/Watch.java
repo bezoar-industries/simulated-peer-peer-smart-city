@@ -5,9 +5,13 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class Watch implements IotDevice{
+public class Watch extends IotDevice{
 
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.POWER_STATE, Utilities.METRIC_TYPES.CPU_USAGE, Utilities.METRIC_TYPES.MEMORY_USAGE, Utilities.METRIC_TYPES.BATTERY_PERCENTAGE, Utilities.METRIC_TYPES.HEART_RATE);
+
+    public Watch() {
+        super(IotType.Watch);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

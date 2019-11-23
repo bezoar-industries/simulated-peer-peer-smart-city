@@ -129,16 +129,16 @@ public class TestNetworkMap {
    public List<Vertex> createVerticesList() {
       List<Vertex> vertices = new ArrayList<Vertex>();
 
-      vertices.add(new Vertex(0, createIdentity("albany"), 3));
-      vertices.add(new Vertex(1, createIdentity("annapolis"), 18));
-      vertices.add(new Vertex(2, createIdentity("atlanta"), 24));
-      vertices.add(new Vertex(3, createIdentity("augusta"), 14));
-      vertices.add(new Vertex(4, createIdentity("austin"), 5));
-      vertices.add(new Vertex(5, createIdentity("baton-rouge"), 13));
-      vertices.add(new Vertex(6, createIdentity("bismarck"), 22));
-      vertices.add(new Vertex(7, createIdentity("boise"), 14));
-      vertices.add(new Vertex(8, createIdentity("boston"), 8));
-      vertices.add(new Vertex(9, createIdentity("carson-city"), 28));
+      vertices.add(new Vertex(0, createIdentity("albany"), "8435"));
+      vertices.add(new Vertex(1, createIdentity("annapolis"), "75435"));
+      vertices.add(new Vertex(2, createIdentity("atlanta"), "8764356"));
+      vertices.add(new Vertex(3, createIdentity("augusta"), "87654"));
+      vertices.add(new Vertex(4, createIdentity("austin"), "234354"));
+      vertices.add(new Vertex(5, createIdentity("baton-rouge"), "3468967"));
+      vertices.add(new Vertex(6, createIdentity("bismarck"), "95733454"));
+      vertices.add(new Vertex(7, createIdentity("boise"), "439854089"));
+      vertices.add(new Vertex(8, createIdentity("boston"), "3285454"));
+      vertices.add(new Vertex(9, createIdentity("carson-city"), "9865"));
 
       return vertices;
    }

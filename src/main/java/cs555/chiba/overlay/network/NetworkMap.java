@@ -1,5 +1,8 @@
 package cs555.chiba.overlay.network;
 
+import cs555.chiba.iotDevices.IotDevice;
+import cs555.chiba.iotDevices.IotFactory;
+import cs555.chiba.iotDevices.IotTransformer;
 import cs555.chiba.service.Identity;
 import cs555.chiba.util.Utilities;
 
@@ -249,10 +252,12 @@ public class NetworkMap {
    }
 
    /**
-    * Random iot device count between 3 and 30.
+    * Random iot device string
     */
-   private int generateIotDevices() {
-      return ThreadLocalRandom.current().nextInt(3, 31);
+   private String generateIotDevices() {
+      List<IotDevice> connectedIotDevices = IotFactory.generateRandomDevices(3, 30);
+      IotTransformer trans = new IotTransformer(connectedIotDevices);
+      return trans.getDeviceString();
    }
 
    @Override public int hashCode() {

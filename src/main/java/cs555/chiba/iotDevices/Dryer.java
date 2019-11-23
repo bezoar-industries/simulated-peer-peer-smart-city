@@ -5,9 +5,13 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class Dryer implements IotDevice{
+public class Dryer extends IotDevice{
 
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.POWER_STATE, Utilities.METRIC_TYPES.CURRENT_CYCLE_STEP);
+
+    public Dryer() {
+        super(IotType.Dryer);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

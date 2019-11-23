@@ -88,10 +88,10 @@ public class Edge {
       List<String> columns = new ArrayList<>();
       columns.add(Integer.toString(this.getFirst().getId()));
       columns.add(this.getFirst().getName().getIdentityKey());
-      columns.add(Integer.toString(this.getFirst().getDeviceCount()));
+      columns.add(this.getFirst().getDeviceString());
       columns.add(Integer.toString(this.getSecond().getId()));
       columns.add(this.getSecond().getName().getIdentityKey());
-      columns.add(Integer.toString(this.getSecond().getDeviceCount()));
+      columns.add(this.getSecond().getDeviceString());
       columns.add(this.getCost().toString());
 
       return String.join(",", columns);
@@ -100,14 +100,14 @@ public class Edge {
    public static Edge fromCsv(String[] columns) {
       int firstId = Integer.parseInt(columns[0]);
       Identity firstIdent = Identity.builder().withIdentityKey(columns[1]).build();
-      int firstCount = Integer.parseInt(columns[2]);
+      String firstDevices = columns[2];
       int secondId = Integer.parseInt(columns[3]);
       Identity secondIdent = Identity.builder().withIdentityKey(columns[4]).build();
-      int secondCount = Integer.parseInt(columns[5]);;
+      String secondDevices = columns[5];
       Integer cost = Integer.parseInt(columns[6]);
 
-      Vertex first = new Vertex(firstId, firstIdent, firstCount);
-      Vertex second = new Vertex(secondId, secondIdent, secondCount);
+      Vertex first = new Vertex(firstId, firstIdent, firstDevices);
+      Vertex second = new Vertex(secondId, secondIdent, secondDevices);
       return Edge.builder().withFirst(first).withSecond(second).withCost(cost).build();
    }
 

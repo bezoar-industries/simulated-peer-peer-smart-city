@@ -70,7 +70,8 @@ public class Peer extends ServiceNode {
    private void register() {
       try {
          logger.info("Registering: [" + this.getIdentity().getIdentityName() + "] \n");
-         RegisterMessage message = new RegisterMessage(this.getIdentity());
+         IotTransformer trans = new IotTransformer(this.connectedIotDevices);
+         RegisterMessage message = new RegisterMessage(this.getIdentity(), trans.getDeviceString());
          this.getTcpConnectionsCache().sendSingle(this.registryId, message.getBytes());
       }
       catch (Exception e) {
@@ -79,83 +80,15 @@ public class Peer extends ServiceNode {
    }
 
    private void createIotNetwork(int numberOfIoTDevices) {
-      this.connectedIotDevices = new LinkedList<>();
       if (numberOfIoTDevices == 0) {
          // if no number of IoT devices defined, then generate a random number between 3 and 30 devices
          // Upper bounds of 27 and then adding 3 to ensure the range above is followed
-         Random random = new Random();
-         numberOfIoTDevices = random.nextInt(27) + 3;
+         this.connectedIotDevices = IotFactory.generateRandomDevices(3, 30);
+      }
+      else {
+         this.connectedIotDevices = IotFactory.generateRandomDevices(1, numberOfIoTDevices);
       }
 
-      logger.info("number of devices: " + numberOfIoTDevices);
-
-      // Add devices to our array list
-      for (int i = 0; i < numberOfIoTDevices; i++) {
-
-         // Change this int when adding a new IoT device
-         int numberOfPossibleIotDevices = 19;
-         Random random = new Random();
-         int possibleDevicesRandomIndex = random.nextInt(numberOfPossibleIotDevices);
-         switch (possibleDevicesRandomIndex) {
-            case 0:
-               this.connectedIotDevices.add(new Thermometer());
-               break;
-            case 1:
-               this.connectedIotDevices.add(new Thermostat());
-               break;
-            case 2:
-               this.connectedIotDevices.add(new DoorLock());
-               break;
-            case 3:
-               this.connectedIotDevices.add(new Outlet());
-               break;
-            case 4:
-               this.connectedIotDevices.add(new AirPollutionMonitor());
-               break;
-            case 5:
-               this.connectedIotDevices.add(new AirVent());
-               break;
-            case 6:
-               this.connectedIotDevices.add(new DoorSensor());
-               break;
-            case 7:
-               this.connectedIotDevices.add(new Dryer());
-               break;
-            case 8:
-               this.connectedIotDevices.add(new LightSwitch());
-               break;
-            case 9:
-               this.connectedIotDevices.add(new Microwave());
-               break;
-            case 10:
-               this.connectedIotDevices.add(new Refrigerator());
-               break;
-            case 11:
-               this.connectedIotDevices.add(new TV());
-               break;
-            case 12:
-               this.connectedIotDevices.add(new WashMachine());
-               break;
-            case 13:
-               this.connectedIotDevices.add(new Watch());
-               break;
-            case 14:
-               this.connectedIotDevices.add(new WaterLeakSensor());
-               break;
-            case 15:
-               this.connectedIotDevices.add(new WindowSensor());
-               break;
-            case 16:
-               this.connectedIotDevices.add(new Clock());
-               break;
-            case 17:
-               this.connectedIotDevices.add(new StreetLight());
-               break;
-            case 18:
-               this.connectedIotDevices.add(new PowerMeter());
-               break;
-         }
-      }
       logger.info(this.connectedIotDevices.toString());
       logger.info("Number of actual devices: " + this.connectedIotDevices.size());
    }
@@ -285,6 +218,12 @@ public class Peer extends ServiceNode {
       message.getNeighbors().forEach(identity -> {
          this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
       });
+      IotTransformer trans = new IotTransformer(message.getDeviceString());
+      this.connectedIotDevices = trans.getConnectedIotDevices();
+   }
+
+   public List<IotDevice> getConnectedIotDevices() {
+      return this.connectedIotDevices;
    }
 
    private void handle(IntroductionMessage message) {
