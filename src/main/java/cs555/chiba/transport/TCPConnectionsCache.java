@@ -93,6 +93,7 @@ public class TCPConnectionsCache implements AutoCloseable {
    public TCPSender getRandomSender() {
       Random generator = new Random();
       Object[] values = senders.values().toArray();
+      System.out.println(senders.size());
       return (TCPSender) values[generator.nextInt(values.length)];
    }
 
