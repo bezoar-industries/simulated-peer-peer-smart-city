@@ -244,17 +244,13 @@ public class Peer extends ServiceNode {
 
       queryIDCache.putEntry(e.getID(), e.getSenderID());
 
-      System.out.println("random walk line 247");
-
       byte[] m = nextRWMesage.getBytes();
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
-         System.out.println("random walk line 252");
          //If the message hasn't yet hit its hop limit
          this.getTcpConnectionsCache().sendToRandom(m, e.getSenderID());
       } else {
          // no more walking...
-         System.out.println("random walk line 257");
          this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
       }
    }

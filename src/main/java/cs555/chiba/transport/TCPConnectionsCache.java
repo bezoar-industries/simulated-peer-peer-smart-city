@@ -164,13 +164,9 @@ public class TCPConnectionsCache implements AutoCloseable {
 
       Object[] keys = clonedListOfSenders.keySet().toArray();
 
-      System.out.println(clonedListOfSenders.size());
-
       Identity key = (Identity) keys[generator.nextInt(keys.length)];
 
       TCPSender randomSender = senders.get(key);
-
-      System.out.println(randomSender.getIdentity());
 
       randomSender.addMessage(message);
    }
