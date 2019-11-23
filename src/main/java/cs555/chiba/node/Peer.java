@@ -198,7 +198,7 @@ public class Peer extends ServiceNode {
          nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
          m = nextFloodMessage.getBytes();
 
-         this.getTcpConnectionsCache().send(randomNode, m);
+         this.getTcpConnectionsCache().sendSingle(randomNode, m);
 
          List<Identity> nodesToExclude = new ArrayList<>();
          nodesToExclude.add(randomNode);
