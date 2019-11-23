@@ -228,16 +228,22 @@ public class Peer extends ServiceNode {
    private void handle(RandomWalk e) {
       logger.info("Received random walk message with ID: " + e.getID());
 
+      RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
+
       if (!queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - don't process it again (but still forward it)
          //Check if queried data is here - if so, log appropriately
          metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+
+         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+      } else {
+         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
       }
+
       queryIDCache.putEntry(e.getID(), e.getSenderID());
 
-      RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
-      nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
-      nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
       byte[] m = nextRWMesage.getBytes();
 
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
