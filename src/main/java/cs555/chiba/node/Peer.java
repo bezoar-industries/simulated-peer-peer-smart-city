@@ -73,6 +73,8 @@ public class Peer extends ServiceNode {
       }
    }
 
+   // these are overwritten by the devices sent by the overlay
+   // We should either remove this push them to the Overlay.
    private void createIotNetwork(int numberOfIoTDevices) {
       if (numberOfIoTDevices == 0) {
          // if no number of IoT devices defined, then generate a random number between 3 and 30 devices
@@ -82,9 +84,6 @@ public class Peer extends ServiceNode {
       else {
          this.connectedIotDevices = IotFactory.generateRandomDevices(1, numberOfIoTDevices);
       }
-
-      logger.info(this.connectedIotDevices.toString());
-      logger.info("Number of actual devices: " + this.connectedIotDevices.size());
    }
 
    private Integer calculateTotalDevicesWithMetric(String metricName) {
