@@ -5,9 +5,13 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class AirVent implements IotDevice {
+public class AirVent extends IotDevice {
 
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.POWER_STATE, Utilities.METRIC_TYPES.AIR_QUALITY, Utilities.METRIC_TYPES.TEMPERATURE, Utilities.METRIC_TYPES.THROTTLE_STATE);
+
+    public AirVent() {
+        super(IotType.AirVent);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

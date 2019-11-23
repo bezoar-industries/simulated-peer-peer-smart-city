@@ -20,6 +20,11 @@ class PeerCommands {
          return null;
       });
 
+      builder.registerCommand("listdevices", args -> { // list all the registered nodes
+         logger.info(listDevices(peer));
+         return null;
+      });
+
       return builder.build();
    }
 
@@ -30,6 +35,18 @@ class PeerCommands {
       StringBuffer out = new StringBuffer("Neighboring Peers: \n");
       peer.getTcpConnectionsCache().listConnections().forEach(ident -> {
          out.append(ident).append("\n");
+      });
+
+      return out.toString();
+   }
+
+   /**
+    * Who are our neighbors
+    */
+   private static String listDevices(Peer peer) {
+      StringBuffer out = new StringBuffer("IoT Devices: \n");
+      peer.getConnectedIotDevices().forEach(device -> {
+         out.append(device).append("\n");
       });
 
       return out.toString();

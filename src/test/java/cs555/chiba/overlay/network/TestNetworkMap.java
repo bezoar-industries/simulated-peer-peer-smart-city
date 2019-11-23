@@ -59,8 +59,7 @@ public class TestNetworkMap {
       assertEquals(10000, net.getVertices().size());
    }
 
-   @Ignore
-   @Test public void testExport() throws IOException {
+   @Ignore @Test public void testExport() throws IOException {
       NetworkMap net = new NetworkMap(createRegisteredNodes(), 4, 4);
       NetworkMapTransformer trans = new NetworkMapTransformer(net);
       String out = trans.export();
@@ -129,16 +128,16 @@ public class TestNetworkMap {
    public List<Vertex> createVerticesList() {
       List<Vertex> vertices = new ArrayList<Vertex>();
 
-      vertices.add(new Vertex(0, createIdentity("albany"), 3));
-      vertices.add(new Vertex(1, createIdentity("annapolis"), 18));
-      vertices.add(new Vertex(2, createIdentity("atlanta"), 24));
-      vertices.add(new Vertex(3, createIdentity("augusta"), 14));
-      vertices.add(new Vertex(4, createIdentity("austin"), 5));
-      vertices.add(new Vertex(5, createIdentity("baton-rouge"), 13));
-      vertices.add(new Vertex(6, createIdentity("bismarck"), 22));
-      vertices.add(new Vertex(7, createIdentity("boise"), 14));
-      vertices.add(new Vertex(8, createIdentity("boston"), 8));
-      vertices.add(new Vertex(9, createIdentity("carson-city"), 28));
+      vertices.add(new Vertex(0, createIdentity("albany"), "8435"));
+      vertices.add(new Vertex(1, createIdentity("annapolis"), "75435"));
+      vertices.add(new Vertex(2, createIdentity("atlanta"), "8764356"));
+      vertices.add(new Vertex(3, createIdentity("augusta"), "87654"));
+      vertices.add(new Vertex(4, createIdentity("austin"), "234354"));
+      vertices.add(new Vertex(5, createIdentity("baton-rouge"), "3468967"));
+      vertices.add(new Vertex(6, createIdentity("bismarck"), "95733454"));
+      vertices.add(new Vertex(7, createIdentity("boise"), "439854089"));
+      vertices.add(new Vertex(8, createIdentity("boston"), "3285454"));
+      vertices.add(new Vertex(9, createIdentity("carson-city"), "9865"));
 
       return vertices;
    }
@@ -244,5 +243,28 @@ public class TestNetworkMap {
 
       List<Identity> carsonCity = net.getConnectionList(vertices.get(9).getName());
       assertEquals(0, carsonCity.size());
+   }
+
+   @Ignore @Test public void testImport() throws IOException {
+      File file = new File("test.txt");
+
+      assertTrue(file.exists());
+      assertTrue(file.isFile());
+      assertTrue(file.canRead());
+
+      NetworkMapTransformer trans = new NetworkMapTransformer(file);
+      NetworkMap net = trans.applyRegisteredNodes(buildPeerList());
+   }
+
+   private List<Identity> buildPeerList() {
+      List<Identity> idents = new ArrayList<>();
+      idents.add(buildTestIdentity(5532));
+      idents.add(buildTestIdentity(9785));
+      idents.add(buildTestIdentity(3456));
+      return idents;
+   }
+
+   private Identity buildTestIdentity(int port) {
+      return Identity.builder().withHost("www.test.com").withPort(port).build();
    }
 }

@@ -5,8 +5,12 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class LightSwitch implements IotDevice{
+public class LightSwitch extends IotDevice{
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.LIGHT_STATUS);
+
+    public LightSwitch() {
+        super(IotType.LightSwitch);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

@@ -20,13 +20,13 @@ public class Vertex {
    private final int id; // the ordered id used ensure we don't repeat our messages to the nodes
    private final Identity name; // the message node this vertex represents
    private final Map<Vertex, Integer> edges; // the cost of traversing an edge
-   private final int deviceCount;
+   private final String deviceString;
 
-   public Vertex(int id, Identity name, int deviceCount) {
+   public Vertex(int id, Identity name, String deviceString) {
       this.id = id;
       this.name = name;
-      this.edges = new HashMap<Vertex, Integer>();
-      this.deviceCount = deviceCount;
+      this.edges = new HashMap<>();
+      this.deviceString = deviceString;
    }
 
    public int getId() {
@@ -41,8 +41,8 @@ public class Vertex {
       return this.edges;
    }
 
-   public int getDeviceCount() {
-      return deviceCount;
+   public String getDeviceString() {
+      return deviceString;
    }
 
    /**
@@ -100,14 +100,14 @@ public class Vertex {
       if (o == null || getClass() != o.getClass())
          return false;
       Vertex vertex = (Vertex) o;
-      return id == vertex.id && deviceCount == vertex.deviceCount && Objects.equals(name, vertex.name);
+      return id == vertex.id && Objects.equals(deviceString, vertex.deviceString) && Objects.equals(name, vertex.name);
    }
 
    @Override public int hashCode() {
-      return Objects.hash(id, name, deviceCount);
+      return Objects.hash(id, name, deviceString);
    }
 
    @Override public String toString() {
-      return "Vertex{" + "id=" + id + ", name=" + name + ", edges=" + edges.keySet().stream().map(v -> v.getName().getHost()).collect(Collectors.joining(",")) + ", deviceCount=" + deviceCount + '}';
+      return "Vertex{" + "id=" + id + ", name=" + name + ", edges=" + edges.keySet().stream().map(v -> v.getName().getHost()).collect(Collectors.joining(",")) + ", deviceString=" + deviceString + '}';
    }
 }

@@ -5,9 +5,13 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class Thermostat implements IotDevice{
+public class Thermostat extends IotDevice{
 
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.POWER_STATE, Utilities.METRIC_TYPES.SET_TEMPERATURE, Utilities.METRIC_TYPES.TEMPERATURE, Utilities.METRIC_TYPES.TIME_TO_NEXT_TERMPERATURE_CHANGE);
+
+    public Thermostat() {
+        super(IotType.Thermostat);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

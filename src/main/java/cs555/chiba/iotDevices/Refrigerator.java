@@ -5,9 +5,13 @@ import cs555.chiba.util.Utilities;
 import java.util.Arrays;
 import java.util.List;
 
-public class Refrigerator implements IotDevice{
+public class Refrigerator extends IotDevice{
 
     private List<Utilities.METRIC_TYPES> listOfValidStates = Arrays.asList(Utilities.METRIC_TYPES.POWER_CONSUMPTION, Utilities.METRIC_TYPES.POWER_STATE, Utilities.METRIC_TYPES.TEMPERATURE, Utilities.METRIC_TYPES.FRIDGE_TEMPERATURE, Utilities.METRIC_TYPES.FREEZER_TEMPERATURE, Utilities.METRIC_TYPES.ICE_LEVEL);
+
+    public Refrigerator() {
+        super(IotType.Refrigerator);
+    }
 
     @Override
     public Integer getMetric(String metricName) {

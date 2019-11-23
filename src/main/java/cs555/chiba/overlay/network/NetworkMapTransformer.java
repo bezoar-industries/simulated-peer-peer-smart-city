@@ -40,7 +40,7 @@ public class NetworkMapTransformer {
    private Map<Vertex, Vertex> createMapping(List<Vertex> vertices, List<Identity> registeredNodes) {
       Map<Vertex, Vertex> assignments = new HashMap<>();
       for (int i = 0; i < vertices.size(); i++) {
-         Vertex ver = new Vertex(vertices.get(i).getId(), registeredNodes.get(i), vertices.get(i).getDeviceCount());
+         Vertex ver = new Vertex(vertices.get(i).getId(), registeredNodes.get(i), vertices.get(i).getDeviceString());
          assignments.put(vertices.get(i), ver);
       }
 

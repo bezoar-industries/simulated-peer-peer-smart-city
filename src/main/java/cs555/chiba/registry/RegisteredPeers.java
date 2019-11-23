@@ -20,7 +20,7 @@ public class RegisteredPeers {
 
    private static final Logger logger = Logger.getLogger(RegisteredPeers.class.getName());
 
-   private Map<Identity, Integer> registry = new ConcurrentHashMap<>(); // registered peers
+   private Map<Identity, String> registry = new ConcurrentHashMap<>(); // registered peers
 
    /**
     * Register the node with the system.
@@ -31,13 +31,13 @@ public class RegisteredPeers {
       }
 
       Identity ident = message.getIdentity();
-      Integer iotCount = this.registry.get(ident);
+      String deviceCount = this.registry.get(ident);
 
-      if (iotCount != null) {
+      if (deviceCount != null) {
          logger.severe("The requesting peer is already registered [" + ident.getIdentityKey() + "]'");
       }
       else {
-         this.registry.put(ident, 0); // TODO this should be a map of values 43245 is 4 lights, 3 locks, 2.. etc
+         this.registry.put(ident, message.getDeviceList());
          logger.info("The node [" + ident.getIdentityKey() + "] has been registered.");
       }
    }

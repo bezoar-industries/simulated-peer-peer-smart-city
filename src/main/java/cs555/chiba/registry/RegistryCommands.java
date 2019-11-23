@@ -232,7 +232,7 @@ class RegistryCommands {
       for (Vertex vertex : vertices) {
          try {
             logger.info("Setting up peer: [" + vertex.getName().getIdentityKey() + "] \n");
-            InitiateConnectionsMessage message = new InitiateConnectionsMessage(vertex.getConnectionList());
+            InitiateConnectionsMessage message = new InitiateConnectionsMessage(vertex.getConnectionList(), vertex.getDeviceString());
             registryNode.getTcpConnectionsCache().sendSingle(vertex.getName(), message.getBytes());
          }
          catch (Exception e) {
