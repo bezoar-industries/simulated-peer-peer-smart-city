@@ -6,69 +6,40 @@ import java.util.UUID;
 public class ResultMetrics {
 
     private UUID requestId;
-    private int totalNumberOfHops;
-    private int totalNumberOfDevices;
-    private int totalNumberOfDevicesWithMetric;
+    private long totalNumberOfHops;
+    private long totalNumberOfDevices;
+    private long totalNumberOfDevicesWithMetric;
     private Date timeQueryStarted;
     private Date timeOfLastReceivedResultMessage;
+    private String typeOfQuery;
 
-    public ResultMetrics(UUID requestId, int totalNumberOfHops, int totalNumberOfDevices, int totalNumberOfDevicesWithMetric) {
+    public ResultMetrics(UUID requestId, long totalNumberOfHops, long totalNumberOfDevices, long
+            totalNumberOfDevicesWithMetric, String typeOfQuery) {
         this.requestId = requestId;
         this.totalNumberOfHops = totalNumberOfHops;
         this.totalNumberOfDevices = totalNumberOfDevices;
         this.timeQueryStarted = new Date();
         this.totalNumberOfDevicesWithMetric = totalNumberOfDevicesWithMetric;
+        this.typeOfQuery = typeOfQuery;
     }
 
-    public UUID getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(UUID requestId) {
-        this.requestId = requestId;
-    }
-
-    public int getTotalNumberOfHops() {
-        return totalNumberOfHops;
-    }
-
-    public void addTotalNumberOfHops(int totalNumberOfHops) {
+    public synchronized void addResult(int totalNumberOfHops, int totalNumberOfDevices, int
+            totalNumberOfDevicesWithMetric) {
         this.totalNumberOfHops += totalNumberOfHops;
-    }
-
-    public int getTotalNumberOfDevices() {
-        return totalNumberOfDevices;
-    }
-
-    public void addTotalNumberOfDevices(int totalNumberOfDevices) {
         this.totalNumberOfDevices += totalNumberOfDevices;
-    }
-
-    public Date getTimeQueryStarted() {
-        return timeQueryStarted;
-    }
-
-    public Date getTimeOfLastReceivedResultMessage() {
-        return timeOfLastReceivedResultMessage;
-    }
-
-    public int getTotalNumberOfDevicesWithMetric() {
-        return totalNumberOfDevicesWithMetric;
-    }
-
-    public void addTotalNumberOfDevicesWithMetric(int totalNumberOfDevicesWithMetric) {
         this.totalNumberOfDevicesWithMetric += totalNumberOfDevicesWithMetric;
-    }
-
-    public void setTimeOfLastReceivedResultMessage() {
         this.timeOfLastReceivedResultMessage = new Date();
     }
 
-    public static ResultMetrics merge(ResultMetrics rm1, ResultMetrics rm2) {
-        rm1.addTotalNumberOfHops(rm2.getTotalNumberOfHops());
-        rm1.addTotalNumberOfDevices(rm2.getTotalNumberOfDevices());
-        rm1.setTimeOfLastReceivedResultMessage();
-        rm1.addTotalNumberOfDevicesWithMetric(rm2.getTotalNumberOfDevicesWithMetric());
-        return rm1;
+    @Override
+    public String toString() {
+        return "ResultMetrics{" +
+                "totalNumberOfHops=" + totalNumberOfHops +
+                ", totalNumberOfDevices=" + totalNumberOfDevices +
+                ", totalNumberOfDevicesWithMetric=" + totalNumberOfDevicesWithMetric +
+                ", timeQueryStarted=" + timeQueryStarted +
+                ", timeOfLastReceivedResultMessage=" + timeOfLastReceivedResultMessage +
+                ", typeOfQuery='" + typeOfQuery + '\'' +
+                '}';
     }
 }
