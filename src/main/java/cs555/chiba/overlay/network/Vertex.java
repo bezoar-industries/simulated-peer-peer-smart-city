@@ -100,7 +100,7 @@ public class Vertex {
       if (o == null || getClass() != o.getClass())
          return false;
       Vertex vertex = (Vertex) o;
-      return id == vertex.id && deviceString == vertex.deviceString && Objects.equals(name, vertex.name);
+      return id == vertex.id && Objects.equals(deviceString, vertex.deviceString) && Objects.equals(name, vertex.name);
    }
 
    @Override public int hashCode() {

@@ -106,12 +106,12 @@ public class NetworkMap {
     */
    private void addVertices(List<Edge> edges) {
       // Add all the vertices in the list.  Since everything will be listed multiple times, we'll put it in a set for uniqueness
-      Set<Vertex> allVertices = new HashSet<Vertex>();
+      Set<Vertex> allVertices = new HashSet<>();
       for (Edge edge : edges) {
          allVertices.add(edge.getFirst());
          allVertices.add(edge.getSecond());
       }
-      this.vertices = new ArrayList<Vertex>(allVertices);
+      this.vertices = new ArrayList<>(allVertices);
       Collections.sort(this.vertices, Comparator.comparing(Vertex::getId));
    }
 

@@ -59,8 +59,7 @@ public class TestNetworkMap {
       assertEquals(10000, net.getVertices().size());
    }
 
-   @Ignore
-   @Test public void testExport() throws IOException {
+   @Ignore @Test public void testExport() throws IOException {
       NetworkMap net = new NetworkMap(createRegisteredNodes(), 4, 4);
       NetworkMapTransformer trans = new NetworkMapTransformer(net);
       String out = trans.export();
@@ -244,5 +243,28 @@ public class TestNetworkMap {
 
       List<Identity> carsonCity = net.getConnectionList(vertices.get(9).getName());
       assertEquals(0, carsonCity.size());
+   }
+
+   @Ignore @Test public void testImport() throws IOException {
+      File file = new File("test.txt");
+
+      assertTrue(file.exists());
+      assertTrue(file.isFile());
+      assertTrue(file.canRead());
+
+      NetworkMapTransformer trans = new NetworkMapTransformer(file);
+      NetworkMap net = trans.applyRegisteredNodes(buildPeerList());
+   }
+
+   private List<Identity> buildPeerList() {
+      List<Identity> idents = new ArrayList<>();
+      idents.add(buildTestIdentity(5532));
+      idents.add(buildTestIdentity(9785));
+      idents.add(buildTestIdentity(3456));
+      return idents;
+   }
+
+   private Identity buildTestIdentity(int port) {
+      return Identity.builder().withHost("www.test.com").withPort(port).build();
    }
 }
