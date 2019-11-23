@@ -193,19 +193,28 @@ public class Peer extends ServiceNode {
          // Get a random node to send the totals with this nodes stats.  Then combine in a list with the sender.
          // This list should be excluded from the initial message
          Identity randomNode = this.getTcpConnectionsCache().getRandomSender().getIdentity();
-         List<Identity> nodesToExclude = new ArrayList<>();
-         nodesToExclude.add(randomNode);
-         nodesToExclude.add(e.getSenderID());
-
-         this.getTcpConnectionsCache().sendAll(m, nodesToExclude);
 
          nextFloodMessage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
          nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
          m = nextFloodMessage.getBytes();
 
          this.getTcpConnectionsCache().send(randomNode, m);
+
+         List<Identity> nodesToExclude = new ArrayList<>();
+         nodesToExclude.add(randomNode);
+         nodesToExclude.add(e.getSenderID());
+
+         nextFloodMessage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+         nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+         m = nextFloodMessage.getBytes();
+
+         this.getTcpConnectionsCache().sendAll(m, nodesToExclude);
       } else {
          // No more hops for the flooding to take
+
+         nextFloodMessage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+         nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+         m = nextFloodMessage.getBytes();
 
          this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
 
