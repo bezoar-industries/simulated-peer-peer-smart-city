@@ -63,6 +63,12 @@ public class EventFactory {
          case GOSSIP_QUERY:
             this.n.onEvent(new GossipQuery(message, socket));
             break;
+         case GOSSIP_DATA:
+             this.n.onEvent(new GossipData(message, socket));
+             break;
+         case GOSSIP_ENTRIES:
+             this.n.onEvent(new GossipEntries(message, socket));
+             break;
          case INITIATE_CONNECTIONS:
             this.n.onEvent(new InitiateConnectionsMessage(message));
             break;
