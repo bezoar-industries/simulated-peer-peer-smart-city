@@ -51,10 +51,6 @@ public class Peer extends ServiceNode {
       this.queryIDCache = new LRUCache(40);
       this.gossipCache = new LRUCache(40);
       this.gossipEntries = new LRUCache(40);
-      for(IotDevice d : connectedIotDevices) {
-    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
-    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
-      }
       this.metrics = new HashMap<>();
    }
 
@@ -209,7 +205,7 @@ public class Peer extends ServiceNode {
 	         updated = true;
 	   }
 	   if (updated) {
-	      byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
+	      byte[] m = new GossipEntries(this.getIdentity(), gossipEntries.getLocations()).getBytes();
 	      this.getTcpConnectionsCache().sendAll(m, e.getSenderID());
 	   }
    }
@@ -265,6 +261,10 @@ public class Peer extends ServiceNode {
       });
       IotTransformer trans = new IotTransformer(message.getDeviceString());
       this.connectedIotDevices = trans.getConnectedIotDevices();
+      for(IotDevice d : connectedIotDevices) {
+    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
+    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
+      }
    }
 
    public List<IotDevice> getConnectedIotDevices() {

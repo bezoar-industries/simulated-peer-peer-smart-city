@@ -143,6 +143,14 @@ public class LRUCache {
 		return keyNames;
 	}
 	
+	public HashMap<Identity,String> getLocations(){
+		HashMap<Identity,String> locations = new HashMap<>();
+		for(Entry e : this.hashmap.values()) {
+			locations.put(e.value, e.keyName);
+		}
+		return locations;
+	}
+	
 	private void addAtTop(Entry node) {
 		node.right = start;
 		node.left = null;
