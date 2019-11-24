@@ -53,6 +53,7 @@ public class Peer extends ServiceNode {
       this.gossipEntries = new LRUCache(40);
       for(IotDevice d : connectedIotDevices) {
     	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
+    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
       }
       this.metrics = new HashMap<>();
    }
