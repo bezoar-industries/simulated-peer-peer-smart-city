@@ -73,6 +73,11 @@ public class Vertex {
       return this.edges.keySet().stream().filter(v -> v.getId() > this.getId()).map(Vertex::getName).collect(Collectors.toList());
    }
 
+   public List<Identity> getUnfilteredConnectionList() {
+      // try not to leak the connection set
+      return this.edges.keySet().stream().map(Vertex::getName).collect(Collectors.toList());
+   }
+
    /**
     * Create a list of edges that initiate from this vertex.  The lower id initiates the connection.  This means the Vertex with
     * the highest ID doesn't initiate connections to any other vertex.

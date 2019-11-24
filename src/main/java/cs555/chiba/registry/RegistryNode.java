@@ -1,11 +1,13 @@
 package cs555.chiba.registry;
 
 import cs555.chiba.overlay.network.NetworkMap;
+import cs555.chiba.overlay.network.NetworkMapCheck;
 import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipQuery;
+import cs555.chiba.wireformats.ListPeersResponseMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.RegisterMessage;
 
@@ -22,6 +24,7 @@ public class RegistryNode extends ServiceNode {
    private final RegisteredPeers registry = new RegisteredPeers();
    private NetworkMap networkMap;
    private int port; // my startup port
+   private NetworkMapCheck mapCheck;
 
    private ConcurrentHashMap<UUID, ResultMetrics> requests = new ConcurrentHashMap<>();
 
@@ -31,44 +34,41 @@ public class RegistryNode extends ServiceNode {
    }
 
    @Override public void onEvent(Event event) {
-      logger.info("We got a message! [" + event + "]");
-      {
-         if (event instanceof RegisterMessage) {
-            handle((RegisterMessage) event);
+      if (event instanceof RegisterMessage) {
+         handle((RegisterMessage) event);
+      }
+      else if (event instanceof RandomWalk) {
+         RandomWalk randomWalkMessage = (RandomWalk) event;
+         if (requests.containsKey(randomWalkMessage.getID())) {
+            this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0, "randomWalk"));
          }
-         else if (event instanceof RandomWalk) {
-            RandomWalk randomWalkMessage = (RandomWalk) event;
-            if (requests.containsKey(randomWalkMessage.getID())) {
-               this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0,
-                       "randomWalk"));
-            }
 
-            requests.get(randomWalkMessage.getID()).addResult(randomWalkMessage.getCurrentHop(), randomWalkMessage
-                    .getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric());
+         requests.get(randomWalkMessage.getID()).addResult(randomWalkMessage.getCurrentHop(), randomWalkMessage.getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric());
+      }
+      else if (event instanceof GossipQuery) {
+         GossipQuery gossipQueryMessage = (GossipQuery) event;
+         if (!requests.containsKey(gossipQueryMessage.getID())) {
+            this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0, "gossip"));
          }
-         else if (event instanceof GossipQuery) {
-            GossipQuery gossipQueryMessage = (GossipQuery) event;
-            if (!requests.containsKey(gossipQueryMessage.getID())) {
-               this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage
-                       .getID(), 0, 0, 0, "gossip"));
-            }
 
-            requests.get(gossipQueryMessage.getID()).addResult(gossipQueryMessage.getCurrentHop(), gossipQueryMessage
-                    .getTotalDevicesChecked(), gossipQueryMessage.getTotalDevicesWithMetric());
-         }
-         else if (event instanceof Flood) {
-            Flood floodMessage = (Flood) event;
+         requests.get(gossipQueryMessage.getID()).addResult(gossipQueryMessage.getCurrentHop(), gossipQueryMessage.getTotalDevicesChecked(), gossipQueryMessage.getTotalDevicesWithMetric());
+      }
+      else if (event instanceof Flood) {
+         Flood floodMessage = (Flood) event;
 
-            if (!requests.containsKey(floodMessage.getID())) {
-               this.requests.put(floodMessage.getID(), new ResultMetrics(floodMessage.getID(), 0, 0, 0, "flood"));
-            }
+         if (!requests.containsKey(floodMessage.getID())) {
+            this.requests.put(floodMessage.getID(), new ResultMetrics(floodMessage.getID(), 0, 0, 0, "flood"));
+         }
 
-            this.requests.get(floodMessage.getID()).addResult(floodMessage.getCurrentHop(), floodMessage
-                    .getTotalDevicesChecked(), floodMessage.getTotalDevicesWithMetric());
+         this.requests.get(floodMessage.getID()).addResult(floodMessage.getCurrentHop(), floodMessage.getTotalDevicesChecked(), floodMessage.getTotalDevicesWithMetric());
+      }
+      else if (event instanceof ListPeersResponseMessage) {
+         if (this.mapCheck != null) {
+            this.mapCheck.handle((ListPeersResponseMessage) event);
          }
-         else {
-            logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
-         }
+      }
+      else {
+         logger.severe("Cannot handle message [" + event.getClass().getSimpleName() + "]");
       }
    }
 
@@ -127,5 +127,9 @@ public class RegistryNode extends ServiceNode {
 
       int port = Utilities.parsePort(args[0]);
       return new RegistryNode(port);
+   }
+
+   public void clearCheckCount() {
+      this.mapCheck = new NetworkMapCheck(this.networkMap);
    }
 }

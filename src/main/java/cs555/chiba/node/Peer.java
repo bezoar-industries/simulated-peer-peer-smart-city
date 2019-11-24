@@ -22,6 +22,8 @@ import cs555.chiba.wireformats.GossipEntries;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.InitiateConnectionsMessage;
 import cs555.chiba.wireformats.IntroductionMessage;
+import cs555.chiba.wireformats.ListPeersRequestMessage;
+import cs555.chiba.wireformats.ListPeersResponseMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.RegisterMessage;
 import cs555.chiba.wireformats.ShutdownMessage;
@@ -277,6 +279,15 @@ public class Peer extends ServiceNode {
       this.getTcpConnectionsCache().correctIdentity(wrongIdentity, message.getIdentity());
    }
 
+   private void handle(ListPeersRequestMessage message) {
+      try {
+         ListPeersResponseMessage response = new ListPeersResponseMessage(ServiceNode.getThisNode().getIdentity(), this.getTcpConnectionsCache().listPeers());
+         this.getTcpConnectionsCache().sendSingle(this.registryId, response.getBytes());
+      }
+      catch (IOException e) {
+         logger.log(Level.SEVERE, "Failed to list neighboring peers!", e);
+      }
+   }
    /**
     * Routes messages to the correct handler
     * @param e The message that must be handled
@@ -305,6 +316,9 @@ public class Peer extends ServiceNode {
       }
       else if (e instanceof ShutdownMessage) {
          ServiceNode.getThisNode().shutdown();
+      }
+      else if (e instanceof ListPeersRequestMessage) {
+         handle((ListPeersRequestMessage) e);
       }
       else {
          logger.severe("Cannot handle message [" + e.getClass().getSimpleName() + "]");

@@ -69,6 +69,12 @@ public class EventFactory {
          case SHUTDOWN:
             this.n.onEvent(new ShutdownMessage(message));
             break;
+         case LIST_PEERS_REQUEST:
+            this.n.onEvent(new ListPeersRequestMessage(message));
+            break;
+         case LIST_PEERS_RESPONSE:
+            this.n.onEvent(new ListPeersResponseMessage(message));
+            break;
          default:
             System.out.println("Event Factory cannot recognize message type [" + type + "]");
       }
