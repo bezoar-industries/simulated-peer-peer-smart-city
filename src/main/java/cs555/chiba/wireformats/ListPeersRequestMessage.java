@@ -4,14 +4,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class ShutdownMessage extends Message {
+public class ListPeersRequestMessage extends Message {
 
-   public ShutdownMessage() {
-      super(Protocol.SHUTDOWN);
+   public ListPeersRequestMessage() {
+      super(Protocol.LIST_PEERS_REQUEST);
    }
 
-   public ShutdownMessage(byte[] message) throws IOException {
-      super(Protocol.SHUTDOWN, message);
+   public ListPeersRequestMessage(byte[] message) throws IOException {
+      super(Protocol.LIST_PEERS_REQUEST, message);
    }
 
    @Override void parse(DataInputStream input) throws IOException {

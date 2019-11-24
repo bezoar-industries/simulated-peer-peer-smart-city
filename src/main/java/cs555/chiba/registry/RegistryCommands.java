@@ -10,6 +10,7 @@ import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Flood;
 import cs555.chiba.wireformats.GossipQuery;
 import cs555.chiba.wireformats.InitiateConnectionsMessage;
+import cs555.chiba.wireformats.ListPeersRequestMessage;
 import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.ShutdownMessage;
 
@@ -61,15 +62,15 @@ class RegistryCommands {
          sendGossipingRequest(args[0], registryNode, 0);
          return null;
       });
-      
-      builder.registerCommand("gossiptype1", args -> {
-          if (!Utilities.checkArgCount(1, args)) {
-             throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect");
-          }
 
-          sendGossipingRequest(args[0], registryNode, 1);
-          return null;
-       });
+      builder.registerCommand("gossiptype1", args -> {
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect");
+         }
+
+         sendGossipingRequest(args[0], registryNode, 1);
+         return null;
+      });
 
       builder.registerCommand("buildoverlay", args -> { // build a random overlay with the current peers
          if (!Utilities.checkArgCount(2, args)) {
@@ -125,6 +126,11 @@ class RegistryCommands {
          return null;
       });
 
+      builder.registerCommand("checkpeers", args -> {
+         checkpeers(registryNode);
+         return null;
+      });
+
       return builder.build();
    }
 
@@ -143,8 +149,7 @@ class RegistryCommands {
    }
 
    private static void sendFloodingRequest(String metric, RegistryNode registryNode) {
-      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric,
-              0, 4);
+      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 4);
       registryNode.addRequest(request.getID(), "flood");
       logger.info("Sending Flooding request");
       registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
@@ -262,5 +267,21 @@ class RegistryCommands {
 
       logger.info("Finished shutting down peers.\n");
       ServiceNode.getThisNode().shutdown();
+   }
+
+   private static void checkpeers(RegistryNode registryNode) {
+      logger.info("Checking Peers for Correctness...\n");
+      registryNode.clearCheckCount();
+      List<Vertex> vertices = registryNode.getNetworkMap().getVertices();
+
+      for (Vertex vertex : vertices) {
+         try {
+            ListPeersRequestMessage message = new ListPeersRequestMessage();
+            registryNode.getTcpConnectionsCache().sendSingle(vertex.getName(), message.getBytes());
+         }
+         catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to contact peer: [" + vertex.getName().getIdentityKey() + "]", e);
+         }
+      }
    }
 }

@@ -209,6 +209,10 @@ public class TCPConnectionsCache implements AutoCloseable {
       return Collections.list(this.receiverThreads.keys()).stream().map(Identity::getIdentityKey).collect(Collectors.toList());
    }
 
+   public List<Identity> listPeers() {
+      return Utilities.copy(this.senders.keySet());
+   }
+
    @Override public void close() {
       this.receiverThreads.values().forEach(TCPReceiverThread::close);
       this.senders.values().forEach(TCPSender::close);
