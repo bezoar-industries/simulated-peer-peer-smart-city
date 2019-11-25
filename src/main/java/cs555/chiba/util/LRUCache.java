@@ -71,7 +71,6 @@ public class LRUCache {
 			} else {
 				addAtTop(newnode);
 			}
-
 			hashmap.put(key, newnode);
 		}
 		return updated;
@@ -141,6 +140,14 @@ public class LRUCache {
 			keyNames.put(e.keyName, e.distance);
 		}
 		return keyNames;
+	}
+	
+	public HashMap<Identity,String> getLocations(){
+		HashMap<Identity,String> locations = new HashMap<>();
+		for(Entry e : this.hashmap.values()) {
+			locations.put(e.value, e.keyName);
+		}
+		return locations;
 	}
 	
 	private void addAtTop(Entry node) {

@@ -1,6 +1,7 @@
 package cs555.chiba.service;
 
 import cs555.chiba.util.Utilities;
+import cs555.chiba.node.Peer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,8 +42,32 @@ public class Commands {
          logger.info(listConnections());
          return null;
       });
+      this.commands.put("gossipdata", args -> { // print gossip data
+          logger.info(gossipData());
+          return null;
+       });
+      this.commands.put("gossipentries", args -> { // print gossip data
+          logger.info(gossipEntries());
+          return null;
+       });
    }
 
+   private static String gossipData() {
+	      StringBuffer out = new StringBuffer("GossipData: \n");
+	      for(Map.Entry<String,Integer> e : ((Peer) ServiceNode.getThisNode()).getGossipData().getValueLists().entrySet()) {
+	         out.append(e.getKey()).append(" : ").append(e.getValue()).append("\n");
+	      }
+	      return out.toString();
+	   }
+   
+   private static String gossipEntries() {
+	      StringBuffer out = new StringBuffer("GossipEntries: \n");
+	      for(Map.Entry<Identity,String> e : ((Peer) ServiceNode.getThisNode()).getGossipEntries().getLocations().entrySet()) {
+	         out.append(e.getKey().getIdentityKey()).append(" : ").append(e.getValue()).append("\n");
+	      }
+	      return out.toString();
+	   }
+   
    private static String listConnections() {
       StringBuffer out = new StringBuffer("Connections in the Pool: \n");
       ServiceNode.getThisNode().getTcpConnectionsCache().listConnections().forEach(ident -> {
