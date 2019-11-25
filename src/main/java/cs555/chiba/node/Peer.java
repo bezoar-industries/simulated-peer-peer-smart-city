@@ -232,23 +232,36 @@ public class Peer extends ServiceNode {
       //Check if queried data is here - if so, log appropriately
       metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
 
-      nextGossipMessage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
-      nextGossipMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
-      m = nextGossipMessage.getBytes();
+      // Only need to send a message that includes the current stats to one of my "gossip neighbors"
+      GossipQuery nextGossipMessage2 = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
+      nextGossipMessage2.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+      nextGossipMessage2.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+      byte[] m2 = nextGossipMessage2.getBytes();
 
+      int index = 0;
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
          //If the message hasn't yet hit its hop limit
          if(e.getGossipType() == 0) {
 	         if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
 	            for (Map.Entry<Identity, Integer> entry : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList.entrySet()) {
 	               if (entry.getKey() != e.getSenderID() && entry.getKey() != this.getIdentity() && entry.getValue() < e.getHopLimit()-e.getCurrentHop())
-	                  this.getTcpConnectionsCache().send(entry.getKey(), m);
+	                  if(index == 0) {
+                         this.getTcpConnectionsCache().sendSingle(entry.getKey(), m2);
+                      } else {
+                         this.getTcpConnectionsCache().sendSingle(entry.getKey(), m);
+                      }
+	                  index++;
 	            }
 	         }
          } else if(e.getGossipType() == 1) {
         	 for(cs555.chiba.util.LRUCache.Entry entry : gossipEntries.getHashmap().values()) {
         		 if(entry.keyName.contentEquals(e.getTarget())) {
-        			 this.getTcpConnectionsCache().sendSingle(entry.value, m);
+                    if(index == 0) {
+                       this.getTcpConnectionsCache().sendSingle(entry.value, m2);
+                    } else {
+                       this.getTcpConnectionsCache().sendSingle(entry.value, m);
+                    }
+                    index++;
         		 }
         	 }
          }
