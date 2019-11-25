@@ -111,6 +111,14 @@ public class Edge {
       return Edge.builder().withFirst(first).withSecond(second).withCost(cost).build();
    }
 
+   public String toGephiCsv() {
+      List<String> columns = new ArrayList<>();
+      columns.add(Integer.toString(this.getFirst().getId()));
+      columns.add(Integer.toString(this.getSecond().getId()));
+
+      return String.join(";", columns);
+   }
+
    public static Builder builder() {
       return new Builder();
    }
