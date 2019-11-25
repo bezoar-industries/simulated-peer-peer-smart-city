@@ -13,6 +13,7 @@ import cs555.chiba.iotDevices.*;
 import cs555.chiba.service.Identity;
 import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.LRUCache;
+import cs555.chiba.util.LRUCache.Entry;
 import cs555.chiba.util.Metric;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
@@ -202,8 +203,9 @@ public class Peer extends ServiceNode {
    private void handle(GossipEntries e) {
 	   boolean updated = false;
 	   logger.info("Received gossip entries from: " + e.getSenderID());
-	   for (Map.Entry<Identity,String> device : e.getDevices().entrySet()) {
-	      if (gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.getKey().getIdentityKey()+device.getValue()).getBytes()), device.getKey(), device.getValue(), 0.01))
+	   logger.info("Gossip Entry Length: " + e.getDevices().length);
+	   for (Entry device : e.getDevices()) {
+	      if (gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.value.getIdentityKey()+device.keyName).getBytes()), device.value, device.keyName, 0.01))
 	         updated = true;
 	   }
 	   if (updated) {

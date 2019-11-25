@@ -1,5 +1,6 @@
 package cs555.chiba.service;
 
+import cs555.chiba.util.LRUCache.Entry;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.node.Peer;
 
@@ -62,8 +63,8 @@ public class Commands {
    
    private static String gossipEntries() {
 	      StringBuffer out = new StringBuffer("GossipEntries: \n");
-	      for(Map.Entry<Identity,String> e : ((Peer) ServiceNode.getThisNode()).getGossipEntries().getLocations().entrySet()) {
-	         out.append(e.getKey().getIdentityKey()).append(" : ").append(e.getValue()).append("\n");
+	      for(Entry e : ((Peer) ServiceNode.getThisNode()).getGossipEntries().getLocations()) {
+	         out.append(e.value.getIdentityKey()).append(" : ").append(e.keyName).append("\n");
 	      }
 	      return out.toString();
 	   }

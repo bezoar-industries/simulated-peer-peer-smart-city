@@ -3,6 +3,7 @@ package cs555.chiba.util;
 import cs555.chiba.service.Identity;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class LRUCache {
@@ -142,10 +143,12 @@ public class LRUCache {
 		return keyNames;
 	}
 	
-	public HashMap<Identity,String> getLocations(){
-		HashMap<Identity,String> locations = new HashMap<>();
-		for(Entry e : this.hashmap.values()) {
-			locations.put(e.value, e.keyName);
+	public Entry[] getLocations(){
+		Entry[] locations = new Entry[this.hashmap.size()];
+		int i = 0;
+		for(Map.Entry<UUID, Entry> e : this.hashmap.entrySet()) {
+			locations[i] = e.getValue();
+			i++;
 		}
 		return locations;
 	}
