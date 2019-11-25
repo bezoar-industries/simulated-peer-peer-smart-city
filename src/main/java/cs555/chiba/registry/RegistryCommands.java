@@ -131,6 +131,16 @@ class RegistryCommands {
          return null;
       });
 
+      builder.registerCommand("exportgephi", args -> {
+         if (!Utilities.checkArgCount(1, args)) {
+            throw new IllegalArgumentException("Export Overlay requires 1 arguments: path-to-export-file");
+         }
+
+         logger.info(exportOverlayForGephi(args[0], registryNode));
+         return null;
+      });
+
+
       return builder.build();
    }
 
@@ -188,7 +198,7 @@ class RegistryCommands {
          NetworkMap net = registryNode.getNetworkMap();
 
          if (net == null) {
-            out.append("Overlay is empty.  Call buildoverlay first.");
+            out.append("Overlay is empty.  Call buildoverlay or importoverlay first.");
          }
          else {
             NetworkMapTransformer trans = new NetworkMapTransformer(net);
@@ -283,5 +293,30 @@ class RegistryCommands {
             logger.log(Level.SEVERE, "Failed to contact peer: [" + vertex.getName().getIdentityKey() + "]", e);
          }
       }
+   }
+
+   /**
+    * Export an Overlay as a CSV that Gephi can read to visualize the network
+    */
+   private static String exportOverlayForGephi(String exportPath, RegistryNode registryNode) {
+      StringBuilder out = new StringBuilder("Exporting Gephi Overlay: \n");
+      try {
+         NetworkMap net = registryNode.getNetworkMap();
+
+         if (net == null) {
+            out.append("Overlay is empty.  Call buildoverlay or importoverlay first.");
+         }
+         else {
+            NetworkMapTransformer trans = new NetworkMapTransformer(net);
+            String edges = trans.exportGephi();
+            File file = Utilities.writeFile(exportPath, edges);
+            out.append("Gephi Export Succeeded: [").append(file.getAbsolutePath()).append("] \n");
+         }
+      }
+      catch (Exception e) {
+         out.append("Gephi Export Failed \n");
+         logger.log(Level.SEVERE, "Gephi Export Failed", e);
+      }
+      return out.toString();
    }
 }

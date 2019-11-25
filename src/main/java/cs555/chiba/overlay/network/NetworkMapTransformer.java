@@ -67,6 +67,10 @@ public class NetworkMapTransformer {
       return out + this.netMap.getFullEdgeList().stream().map(Edge::toCsv).collect(Collectors.joining("\n"));
    }
 
+   public String exportGephi() {
+      return this.netMap.getFullEdgeList().stream().map(Edge::toGephiCsv).collect(Collectors.joining("\n"));
+   }
+
    private void parseData(String data) {
       String[] rows = data.split("\n");
       String[] connections = rows[0].split(",");
