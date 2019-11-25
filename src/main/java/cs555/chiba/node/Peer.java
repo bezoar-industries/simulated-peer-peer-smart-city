@@ -240,15 +240,15 @@ public class Peer extends ServiceNode {
 
       int index = 0;
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
-         //If the message hasn't yet hit its hop limit
+         //If the message hasn't yet hit its hop limita
          if(e.getGossipType() == 0) {
 	         if (gossipCache.containsEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes()))) {
 	            for (Map.Entry<Identity, Integer> entry : gossipCache.getEntry(UUID.nameUUIDFromBytes(e.getTarget().getBytes())).valueList.entrySet()) {
 	               if (entry.getKey() != e.getSenderID() && entry.getKey() != this.getIdentity() && entry.getValue() < e.getHopLimit()-e.getCurrentHop())
 	                  if(index == 0) {
-                         this.getTcpConnectionsCache().send(entry.getKey(), m2);
+                         this.getTcpConnectionsCache().sendSingle(entry.getKey(), m2);
                       } else {
-                         this.getTcpConnectionsCache().send(entry.getKey(), m);
+                         this.getTcpConnectionsCache().sendSingle(entry.getKey(), m);
                       }
 	                  index++;
 	            }
