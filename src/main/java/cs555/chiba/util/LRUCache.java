@@ -53,6 +53,7 @@ public class LRUCache {
 			if(!entry.valueList.containsKey(value) || entry.distance > distance)
 				updated = true;
 			entry.valueList.put(value, Math.min(distance, entry.distance));
+			entry.distance = Math.min(distance, entry.distance);
 			removeNode(entry);
 			addAtTop(entry);
 		} else {
@@ -121,7 +122,7 @@ public class LRUCache {
 			newnode.key = key;
 			newnode.keyName = device;
 			if (hashmap.size() > LRU_SIZE){
-				if(Math.random() < probability)
+				if(Math.random() > probability)
 					return false;
 				hashmap.remove(end.key);
 				removeNode(end);				
@@ -143,7 +144,7 @@ public class LRUCache {
 		return keyNames;
 	}
 	
-	public Entry[] getLocations(){
+	public synchronized Entry[] getLocations(){
 		Entry[] locations = new Entry[this.hashmap.size()];
 		int i = 0;
 		for(Map.Entry<UUID, Entry> e : this.hashmap.entrySet()) {

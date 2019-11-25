@@ -203,10 +203,8 @@ public class Peer extends ServiceNode {
    private void handle(GossipEntries e) {
 	   boolean updated = false;
 	   logger.info("Received gossip entries from: " + e.getSenderID());
-	   logger.info("Gossip Entry Length: " + e.getDevices().length);
 	   for (Entry device : e.getDevices()) {
-	      if (gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.value.getIdentityKey()+device.keyName).getBytes()), device.value, device.keyName, 0.01))
-	         updated = true;
+		   updated = gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.value.getIdentityKey()+device.keyName).getBytes()), device.value, device.keyName, 0.01);
 	   }
 	   if (updated) {
 	      byte[] m = new GossipEntries(this.getIdentity(), gossipEntries.getLocations()).getBytes();
@@ -277,7 +275,7 @@ public class Peer extends ServiceNode {
 	   this.connectedIotDevices = trans.getConnectedIotDevices();
 	   for(IotDevice d : connectedIotDevices) {
 	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
-	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
+	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 0.01);
 	  }
       message.getNeighbors().forEach(identity -> {
          this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
