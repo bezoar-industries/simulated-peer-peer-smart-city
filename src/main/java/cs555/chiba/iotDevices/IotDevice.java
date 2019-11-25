@@ -7,6 +7,8 @@ public abstract class IotDevice {
    private final IotType type;
 
    public abstract Integer getMetric(String metricName);
+   
+   public abstract String[] getMetricNames();
 
    IotDevice(IotType type) {
       this.type = type;

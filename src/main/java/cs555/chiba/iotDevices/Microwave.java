@@ -12,6 +12,15 @@ public class Microwave extends IotDevice{
     public Microwave() {
         super(IotType.Microwave);
     }
+    
+    @Override
+    public String[] getMetricNames() {
+    	String[] metricNames = new String[listOfValidStates.size()];
+    	for(int i = 0; i < metricNames.length; i++) {
+    		metricNames[i] = listOfValidStates.get(i).name();
+    	}
+    	return metricNames;
+    }
 
     @Override
     public Integer getMetric(String metricName) {

@@ -93,6 +93,14 @@ public class Peer extends ServiceNode {
       }
       return devicesWithMetric;
    }
+   
+   private ArrayList<String> getAllMetricNames(){
+	   ArrayList<String> metricNames = new ArrayList<>();
+	   for (IotDevice device : this.connectedIotDevices) {
+		   metricNames.addAll(new ArrayList<>(Arrays.asList(device.getMetricNames())));
+	   }
+	   return metricNames;
+   }
 
    /**
     * A handler for Flood messages
@@ -117,7 +125,7 @@ public class Peer extends ServiceNode {
 
       queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
-      metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+      metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
       if (e.getCurrentHop() + 1 < e.getHopLimit() || e.getHopLimit() == -1) {
          //If the message hasn't yet hit its hop limit
@@ -165,7 +173,7 @@ public class Peer extends ServiceNode {
       if (!queryIDCache.containsEntry(e.getID())) {
          //We've already processed this query - don't process it again (but still forward it)
          //Check if queried data is here - if so, log appropriately
-         metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+         metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
          nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
          nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
@@ -230,7 +238,7 @@ public class Peer extends ServiceNode {
       logger.info("Received gossip query with ID: " + e.getID());
       queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
-      metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+      metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
       // Only need to send a message that includes the current stats to one of my "gossip neighbors"
       GossipQuery nextGossipMessage2 = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
@@ -273,9 +281,9 @@ public class Peer extends ServiceNode {
    private void handle(InitiateConnectionsMessage message) {
 	   IotTransformer trans = new IotTransformer(message.getDeviceString());
 	   this.connectedIotDevices = trans.getConnectedIotDevices();
-	   for(IotDevice d : connectedIotDevices) {
-	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
-	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 0.01);
+	   for(String d : getAllMetricNames()) {
+	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.getBytes()), d, 0, this.getIdentity());
+	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d).getBytes()), this.getIdentity(), d, 0.01);
 	  }
       message.getNeighbors().forEach(identity -> {
          this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
@@ -292,6 +300,10 @@ public class Peer extends ServiceNode {
    
    public LRUCache getGossipEntries() {
 	   return this.gossipEntries;
+   }
+   
+   public HashMap<UUID,Metric> getMetrics(){
+	   return metrics;
    }
 
    private void handle(IntroductionMessage message) {
