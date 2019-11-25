@@ -20,6 +20,7 @@ public abstract class ServiceNode {
 
    private static final Logger logger = Logger.getLogger(ServiceNode.class.getName());
    private static ServiceNode myself;
+   private static Thread commandPromptThread;
 
    private Identity identity; // who am I?
    private EventFactory eventFactory;
@@ -47,8 +48,8 @@ public abstract class ServiceNode {
     * The defined exit command will interrupt the thread.
     */
    private void runCommandPromptLoop(Commands commands, String prompt) throws InterruptedException {
+      commandPromptThread = Thread.currentThread();
       while (!Thread.currentThread().isInterrupted() && !this.dead) {
-
          String userInput = readFromPrompt(prompt);
 
          if (userInput != null && userInput.trim().length() > 0) {
@@ -66,6 +67,7 @@ public abstract class ServiceNode {
       if (c == null) {
          logger.severe("Unable to open system console! Waiting on interrupt.");
          Thread.currentThread().join(); // sleep forever... or until ctl-c interrupts it
+         return null;
       }
 
       return c.readLine(prompt);
@@ -110,6 +112,9 @@ public abstract class ServiceNode {
          logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
          runCommandPromptLoop(commands, prompt); // start printing metrics every 20 seconds
       }
+      catch (InterruptedException e) {
+         // We were told to shut down
+      }
       catch (Exception e) {
          logger.log(Level.SEVERE, "Something Terrible Happened!", e);
       }
@@ -131,6 +136,7 @@ public abstract class ServiceNode {
       this.serverThread.interrupt();
       this.connections.close();
       this.dead = true;
+      commandPromptThread.interrupt();
    }
 
    protected void specialShutdown() {
