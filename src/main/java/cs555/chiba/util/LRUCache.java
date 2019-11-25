@@ -71,7 +71,6 @@ public class LRUCache {
 			} else {
 				addAtTop(newnode);
 			}
-
 			hashmap.put(key, newnode);
 		}
 		return updated;

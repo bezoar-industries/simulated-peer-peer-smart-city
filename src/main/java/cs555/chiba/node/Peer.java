@@ -256,23 +256,27 @@ public class Peer extends ServiceNode {
    }
 
    private void handle(InitiateConnectionsMessage message) {
+	   IotTransformer trans = new IotTransformer(message.getDeviceString());
+	   this.connectedIotDevices = trans.getConnectedIotDevices();
+	   for(IotDevice d : connectedIotDevices) {
+	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
+	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
+	  }
       message.getNeighbors().forEach(identity -> {
          this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
       });
-      IotTransformer trans = new IotTransformer(message.getDeviceString());
-      this.connectedIotDevices = trans.getConnectedIotDevices();
-      for(IotDevice d : connectedIotDevices) {
-    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
-    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
-      }
-      byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
-      this.getTcpConnectionsCache().sendAll(m);
-      m = new GossipEntries(this.getIdentity(), gossipEntries.getLocations()).getBytes();
-      this.getTcpConnectionsCache().sendAll(m);
    }
 
    public List<IotDevice> getConnectedIotDevices() {
       return this.connectedIotDevices;
+   }
+   
+   public LRUCache getGossipData() {
+	   return this.gossipCache;
+   }
+   
+   public LRUCache getGossipEntries() {
+	   return this.gossipEntries;
    }
 
    private void handle(IntroductionMessage message) {
@@ -280,6 +284,11 @@ public class Peer extends ServiceNode {
       Identity wrongIdentity = Identity.builder().withSocketAddress(generatedSocket.getRemoteSocketAddress()).build();
 
       this.getTcpConnectionsCache().correctIdentity(wrongIdentity, message.getIdentity());
+      
+      byte[] m = new GossipData(this.getIdentity(), gossipCache.getValueLists()).getBytes();
+      this.getTcpConnectionsCache().sendAll(m);
+      m = new GossipEntries(this.getIdentity(), gossipEntries.getLocations()).getBytes();
+      this.getTcpConnectionsCache().sendAll(m);
    }
 
    /**

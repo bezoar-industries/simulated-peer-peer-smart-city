@@ -43,9 +43,6 @@ public class GossipEntries implements Event{
     	ByteBuffer b = ByteBuffer.allocate(message.length).put(message);
     	b.rewind();
         b.get();
-       int senderIDlen = b.getInt();
-       byte[] senderIDbytes = new byte[senderIDlen];
-       b.get(senderIDbytes);
        int senderId = b.getInt();
        byte[] senderBytes = new byte[senderId];
        b.get(senderBytes);
