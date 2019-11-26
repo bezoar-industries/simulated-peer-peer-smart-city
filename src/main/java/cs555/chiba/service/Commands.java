@@ -1,11 +1,14 @@
 package cs555.chiba.service;
 
+import cs555.chiba.util.LRUCache.Entry;
+import cs555.chiba.util.Metric;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.node.Peer;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -50,8 +53,20 @@ public class Commands {
           logger.info(gossipEntries());
           return null;
        });
+      this.commands.put("querymetrics", args -> { // print gossip data
+          logger.info(queryMetrics());
+          return null;
+       });
    }
 
+   private static String queryMetrics() {
+	      StringBuffer out = new StringBuffer("queryMetrics: \n");
+	      for(Map.Entry<UUID,Metric> e : ((Peer) ServiceNode.getThisNode()).getMetrics().entrySet()) {
+	         out.append(e.getKey()).append(" : ").append(e.getValue().getNumResults()).append(" : ").append(e.getValue().getNumHops()).append("\n");
+	      }
+	      return out.toString();
+	   }
+   
    private static String gossipData() {
 	      StringBuffer out = new StringBuffer("GossipData: \n");
 	      for(Map.Entry<String,Integer> e : ((Peer) ServiceNode.getThisNode()).getGossipData().getValueLists().entrySet()) {
@@ -62,8 +77,8 @@ public class Commands {
    
    private static String gossipEntries() {
 	      StringBuffer out = new StringBuffer("GossipEntries: \n");
-	      for(Map.Entry<Identity,String> e : ((Peer) ServiceNode.getThisNode()).getGossipEntries().getLocations().entrySet()) {
-	         out.append(e.getKey().getIdentityKey()).append(" : ").append(e.getValue()).append("\n");
+	      for(Entry e : ((Peer) ServiceNode.getThisNode()).getGossipEntries().getLocations()) {
+	         out.append(e.value.getIdentityKey()).append(" : ").append(e.keyName).append("\n");
 	      }
 	      return out.toString();
 	   }

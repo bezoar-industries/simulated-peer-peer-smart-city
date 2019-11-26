@@ -9,7 +9,6 @@
 
 package cs555.chiba.iotDevices;
 
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

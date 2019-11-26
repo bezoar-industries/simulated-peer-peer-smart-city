@@ -13,6 +13,7 @@ import cs555.chiba.iotDevices.*;
 import cs555.chiba.service.Identity;
 import cs555.chiba.service.ServiceNode;
 import cs555.chiba.util.LRUCache;
+import cs555.chiba.util.LRUCache.Entry;
 import cs555.chiba.util.Metric;
 import cs555.chiba.util.Utilities;
 import cs555.chiba.wireformats.Event;
@@ -45,14 +46,14 @@ public class Peer extends ServiceNode {
    private HashMap<UUID, Metric> metrics;
    private List<IotDevice> connectedIotDevices;
 
-   public Peer(String registryHost, int registryPort, int numberOfIoTDevices) throws IOException {
+   public Peer(String registryHost, int registryPort, int numberOfIoTDevices, int cacheSize) throws IOException {
       super();
       this.registryId = Identity.builder().withHost(registryHost).withPort(registryPort).build();
       this.createIotNetwork(numberOfIoTDevices);
 
       this.queryIDCache = new LRUCache(40);
-      this.gossipCache = new LRUCache(40);
-      this.gossipEntries = new LRUCache(40);
+      this.gossipCache = new LRUCache(cacheSize);
+      this.gossipEntries = new LRUCache(cacheSize);
       this.metrics = new HashMap<>();
    }
 
@@ -92,6 +93,14 @@ public class Peer extends ServiceNode {
       }
       return devicesWithMetric;
    }
+   
+   private ArrayList<String> getAllMetricNames(){
+	   ArrayList<String> metricNames = new ArrayList<>();
+	   for (IotDevice device : this.connectedIotDevices) {
+		   metricNames.addAll(new ArrayList<>(Arrays.asList(device.getMetricNames())));
+	   }
+	   return metricNames;
+   }
 
    /**
     * A handler for Flood messages
@@ -105,18 +114,20 @@ public class Peer extends ServiceNode {
       nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
       byte[] m = nextFloodMessage.getBytes();
 
-      if (queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - ignore it
-         queryIDCache.putEntry(e.getID(), e.getSenderID());
-
-         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
-
-         return;
+      synchronized(queryIDCache) {
+	      if (queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - ignore it
+	         queryIDCache.putEntry(e.getID(), e.getSenderID());
+	
+	         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+	
+	         return;
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
-      metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+      metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
       if (e.getCurrentHop() + 1 < e.getHopLimit() || e.getHopLimit() == -1) {
          //If the message hasn't yet hit its hop limit
@@ -161,19 +172,21 @@ public class Peer extends ServiceNode {
 
       RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
 
-      if (!queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - don't process it again (but still forward it)
-         //Check if queried data is here - if so, log appropriately
-         metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
-
-         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
-         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
-      } else {
-         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
-         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+      synchronized(queryIDCache) {
+	      if (!queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - don't process it again (but still forward it)
+	         //Check if queried data is here - if so, log appropriately
+	         metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
+	
+	         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+	         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+	      } else {
+	         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+	         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
 
       byte[] m = nextRWMesage.getBytes();
 
@@ -202,9 +215,8 @@ public class Peer extends ServiceNode {
    private void handle(GossipEntries e) {
 	   boolean updated = false;
 	   logger.info("Received gossip entries from: " + e.getSenderID());
-	   for (Map.Entry<Identity,String> device : e.getDevices().entrySet()) {
-	      if (gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.getKey().getIdentityKey()+device.getValue()).getBytes()), device.getKey(), device.getValue(), 0.01))
-	         updated = true;
+	   for (Entry device : e.getDevices()) {
+		   updated = gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((device.value.getIdentityKey()+device.keyName).getBytes()), device.value, device.keyName, 0.01);
 	   }
 	   if (updated) {
 	      byte[] m = new GossipEntries(this.getIdentity(), gossipEntries.getLocations()).getBytes();
@@ -218,25 +230,31 @@ public class Peer extends ServiceNode {
       nextGossipMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
       byte[] m = nextGossipMessage.getBytes();
 
-      if (queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - ignore it
-         queryIDCache.putEntry(e.getID(), e.getSenderID());
-
-         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
-
-         return;
+      synchronized(queryIDCache) {
+	      if (queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - ignore it
+	         queryIDCache.putEntry(e.getID(), e.getSenderID());
+	
+	         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+	
+	         return;
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
       logger.info("Received gossip query with ID: " + e.getID());
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
-      metrics.put(e.getID(), new Metric(0, e.getCurrentHop()));
+      metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
       // Only need to send a message that includes the current stats to one of my "gossip neighbors"
       GossipQuery nextGossipMessage2 = new GossipQuery(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit(), 0);
       nextGossipMessage2.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
       nextGossipMessage2.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
       byte[] m2 = nextGossipMessage2.getBytes();
+      
+      nextGossipMessage.setTotalDevicesChecked(0);
+      nextGossipMessage.setTotalDevicesWithMetric(0);
+      m = nextGossipMessage.getBytes();
 
       int index = 0;
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
@@ -255,7 +273,7 @@ public class Peer extends ServiceNode {
 	         }
          } else if(e.getGossipType() == 1) {
         	 for(cs555.chiba.util.LRUCache.Entry entry : gossipEntries.getHashmap().values()) {
-        		 if(entry.keyName.contentEquals(e.getTarget())) {
+        		 if(entry.keyName.contentEquals(e.getTarget()) && entry.value != this.getIdentity()) {
                     if(index == 0) {
                        this.getTcpConnectionsCache().sendSingle(entry.value, m2);
                     } else {
@@ -273,9 +291,9 @@ public class Peer extends ServiceNode {
    private void handle(InitiateConnectionsMessage message) {
 	   IotTransformer trans = new IotTransformer(message.getDeviceString());
 	   this.connectedIotDevices = trans.getConnectedIotDevices();
-	   for(IotDevice d : connectedIotDevices) {
-	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.toString().getBytes()), d.toString(), 0, this.getIdentity());
-	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d.toString()).getBytes()), this.getIdentity(), d.toString(), 1.00);
+	   for(String d : getAllMetricNames()) {
+	    	  gossipCache.putEntryAppend(UUID.nameUUIDFromBytes(d.getBytes()), d, 0, this.getIdentity());
+	    	  gossipEntries.putEntryWithProbability(UUID.nameUUIDFromBytes((this.getIdentity().getIdentityKey()+d).getBytes()), this.getIdentity(), d, 0.01);
 	  }
       message.getNeighbors().forEach(identity -> {
          this.getTcpConnectionsCache().addConnection(identity, this.getEventFactory());
@@ -292,6 +310,10 @@ public class Peer extends ServiceNode {
    
    public LRUCache getGossipEntries() {
 	   return this.gossipEntries;
+   }
+   
+   public HashMap<UUID,Metric> getMetrics(){
+	   return metrics;
    }
 
    private void handle(IntroductionMessage message) {
@@ -370,14 +392,15 @@ public class Peer extends ServiceNode {
 
    private static Peer parseArguments(String[] args) throws IOException {
 
-      if (!Utilities.checkArgCount(3, args)) {
-         throw new IllegalArgumentException("Peer Node requires 3 arguments:  registry-host registry-port iot-count");
+      if (!Utilities.checkArgCount(4, args)) {
+         throw new IllegalArgumentException("Peer Node requires 3 arguments:  registry-host registry-port iot-count cache-size");
       }
 
       String registryHots = args[0];
       int registryPort = Utilities.parsePort(args[1]);
       int iotCount = Integer.parseInt(args[2]);
+      int cacheSize = Integer.parseInt(args[3]);
 
-      return new Peer(registryHots, registryPort, iotCount);
+      return new Peer(registryHots, registryPort, iotCount, cacheSize);
    }
 }

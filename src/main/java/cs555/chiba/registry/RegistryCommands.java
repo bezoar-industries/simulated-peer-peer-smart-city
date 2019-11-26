@@ -15,8 +15,10 @@ import cs555.chiba.wireformats.RandomWalk;
 import cs555.chiba.wireformats.ShutdownMessage;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,38 +39,38 @@ class RegistryCommands {
       });
 
       builder.registerCommand("randomWalk", args -> {
-         if (!Utilities.checkArgCount(1, args)) {
-            throw new IllegalArgumentException("Random Walk requires 1 argument:  " + "metric-to-collect");
+         if (!Utilities.checkArgCount(2, args)) {
+            throw new IllegalArgumentException("Random Walk requires 2 arguments:  " + "metric-to-collect hop-limit");
          }
 
-         sendRandomWalkRequest(args[0], registryNode);
+         sendRandomWalkRequest(args[0], Integer.parseInt(args[1]), registryNode);
          return null;
       });
 
       builder.registerCommand("flood", args -> {
-         if (!Utilities.checkArgCount(1, args)) {
-            throw new IllegalArgumentException("Flooding requires 1 argument:  " + "metric-to-collect");
+         if (!Utilities.checkArgCount(2, args)) {
+            throw new IllegalArgumentException("Flooding requires 1 argument:  " + "metric-to-collect, hop-limit");
          }
 
-         sendFloodingRequest(args[0], registryNode);
+         sendFloodingRequest(args[0], Integer.parseInt(args[1]), registryNode);
          return null;
       });
 
       builder.registerCommand("gossiptype0", args -> {
-         if (!Utilities.checkArgCount(1, args)) {
-            throw new IllegalArgumentException("Gossiping type 0 requires 1 argument:  " + "metric-to-collect");
+         if (!Utilities.checkArgCount(2, args)) {
+            throw new IllegalArgumentException("Gossiping type 0 requires 1 argument:  " + "metric-to-collect, hop-limit");
          }
 
-         sendGossipingRequest(args[0], registryNode, 0);
+         sendGossipingRequest(args[0], Integer.parseInt(args[1]), registryNode, 0);
          return null;
       });
 
       builder.registerCommand("gossiptype1", args -> {
-         if (!Utilities.checkArgCount(1, args)) {
-            throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect");
+         if (!Utilities.checkArgCount(2, args)) {
+            throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect, hop-limit");
          }
 
-         sendGossipingRequest(args[0], registryNode, 1);
+         sendGossipingRequest(args[0], Integer.parseInt(args[1]), registryNode, 1);
          return null;
       });
 
@@ -120,6 +122,14 @@ class RegistryCommands {
          System.out.println(registryNode.getRequests());
          return null;
       });
+      
+      builder.registerCommand("export-results", args -> {
+    	  if (!Utilities.checkArgCount(1, args)) {
+              throw new IllegalArgumentException("Export Overlay requires 1 arguments: path-to-export-file");
+           }
+    	  logger.info(exportResults(args[0], registryNode.getRequests()));
+          return null;
+       });
 
       builder.registerCommand("clear-results", args -> {
          registryNode.clearRequests();
@@ -144,22 +154,26 @@ class RegistryCommands {
       return builder.build();
    }
 
-   private static void sendRandomWalkRequest(String metric, RegistryNode registryNode) {
-      RandomWalk request = new RandomWalk(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10);
+   private static void sendRandomWalkRequest(String metric, int hopLimit, RegistryNode registryNode) {
+      RandomWalk request = new RandomWalk(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, hopLimit);
       registryNode.addRequest(request.getID(), "randomWalk");
       logger.info("Sending random Walk request");
       registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
    }
 
-   private static void sendGossipingRequest(String metric, RegistryNode registryNode, int type) {
-      GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 10, type);
-      registryNode.addRequest(request.getID(), "gossip");
+   private static void sendGossipingRequest(String metric, int hopLimit, RegistryNode registryNode, int type) {
+      GossipQuery request = new GossipQuery(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, hopLimit, type);
+      if(type == 0) {
+    	  registryNode.addRequest(request.getID(), "gossip_type_0");
+      } else {
+    	  registryNode.addRequest(request.getID(), "gossip_type_1");
+      }
       logger.info("Sending Gossiping request");
       registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
    }
 
-   private static void sendFloodingRequest(String metric, RegistryNode registryNode) {
-      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, 4);
+   private static void sendFloodingRequest(String metric, int hopLimit, RegistryNode registryNode) {
+      Flood request = new Flood(UUID.randomUUID(), registryNode.getIdentity(), registryNode.getIdentity(), metric, 0, hopLimit);
       registryNode.addRequest(request.getID(), "flood");
       logger.info("Sending Flooding request");
       registryNode.getTcpConnectionsCache().sendSingle(registryNode.getRegistry().getRandomPeer(), request.getBytes());
@@ -213,6 +227,33 @@ class RegistryCommands {
       }
       return out.toString();
    }
+   
+   private static String exportResults(String exportPath, ConcurrentHashMap<UUID, ResultMetrics> results) {
+	      StringBuilder out = new StringBuilder("Exporting Results: \n");
+	      try {
+	    	  FileWriter f = new FileWriter(exportPath);
+	    	  f.write("ID,Total Hops,Total Devices,Devices with Metric,Max Hops,Time Start,Time End,Type\n");
+	    	  for(ResultMetrics m : results.values()) {
+		    	  StringBuilder line = new StringBuilder("");
+		    	  line.append(m.getRequestId().toString()).append(",");
+		    	  line.append(m.getTotalNumberOfHops()).append(",");
+		    	  line.append(m.getTotalNumberOfDevices()).append(",");
+		    	  line.append(m.getTotalNumberOfDevicesWithMetric()).append(",");
+		    	  line.append(m.getMaxHops()).append(",");
+		    	  line.append(m.getTimeQueryStarted()).append(",");
+		    	  line.append(m.getTimeOfLastReceivedResultMessage()).append(",");
+		    	  line.append(m.getTypeOfQuery()).append("\n");
+		    	  f.write(line.toString());
+	    	  }
+	    	  f.close();
+	      }
+	      catch (Exception e) {
+	         out.append("Export Failed \n");
+	         logger.log(Level.SEVERE, "Export Failed", e);
+	      }
+	      out.append("Success!");
+	      return out.toString();
+	   }
 
    /**
     * Import an Overlay

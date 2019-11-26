@@ -12,6 +12,15 @@ public class Thermostat extends IotDevice{
     public Thermostat() {
         super(IotType.Thermostat);
     }
+    
+    @Override
+    public String[] getMetricNames() {
+    	String[] metricNames = new String[listOfValidStates.size()];
+    	for(int i = 0; i < metricNames.length; i++) {
+    		metricNames[i] = listOfValidStates.get(i).name();
+    	}
+    	return metricNames;
+    }
 
     @Override
     public Integer getMetric(String metricName) {

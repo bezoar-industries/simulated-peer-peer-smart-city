@@ -40,27 +40,31 @@ public class RegistryNode extends ServiceNode {
       else if (event instanceof RandomWalk) {
          RandomWalk randomWalkMessage = (RandomWalk) event;
          if (requests.containsKey(randomWalkMessage.getID())) {
-            this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0, "randomWalk"));
+            this.requests.put(randomWalkMessage.getID(), new ResultMetrics(randomWalkMessage.getID(), 0, 0, 0, 0, "randomWalk"));
          }
 
-         requests.get(randomWalkMessage.getID()).addResult(randomWalkMessage.getCurrentHop(), randomWalkMessage.getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric());
+         requests.get(randomWalkMessage.getID()).addResult(randomWalkMessage.getCurrentHop(), randomWalkMessage.getTotalDevicesChecked(), randomWalkMessage.getTotalDevicesWithMetric(), randomWalkMessage.getCurrentHop());
       }
       else if (event instanceof GossipQuery) {
          GossipQuery gossipQueryMessage = (GossipQuery) event;
          if (!requests.containsKey(gossipQueryMessage.getID())) {
-            this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0, "gossip"));
+        	 if(gossipQueryMessage.getGossipType() == 0) {
+        		 this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0, 0, "gossip_type_0"));
+        	 } else {
+        		 this.requests.put(gossipQueryMessage.getID(), new ResultMetrics(gossipQueryMessage.getID(), 0, 0, 0, 0, "gossip_type_1"));
+        	 }
          }
 
-         requests.get(gossipQueryMessage.getID()).addResult(gossipQueryMessage.getCurrentHop(), gossipQueryMessage.getTotalDevicesChecked(), gossipQueryMessage.getTotalDevicesWithMetric());
+         requests.get(gossipQueryMessage.getID()).addResult(gossipQueryMessage.getCurrentHop(), gossipQueryMessage.getTotalDevicesChecked(), gossipQueryMessage.getTotalDevicesWithMetric(), gossipQueryMessage.getCurrentHop());
       }
       else if (event instanceof Flood) {
          Flood floodMessage = (Flood) event;
 
          if (!requests.containsKey(floodMessage.getID())) {
-            this.requests.put(floodMessage.getID(), new ResultMetrics(floodMessage.getID(), 0, 0, 0, "flood"));
+            this.requests.put(floodMessage.getID(), new ResultMetrics(floodMessage.getID(), 0, 0, 0, 0, "flood"));
          }
 
-         this.requests.get(floodMessage.getID()).addResult(floodMessage.getCurrentHop(), floodMessage.getTotalDevicesChecked(), floodMessage.getTotalDevicesWithMetric());
+         this.requests.get(floodMessage.getID()).addResult(floodMessage.getCurrentHop(), floodMessage.getTotalDevicesChecked(), floodMessage.getTotalDevicesWithMetric(), floodMessage.getCurrentHop());
       }
       else if (event instanceof ListPeersResponseMessage) {
          if (this.mapCheck != null) {
@@ -73,7 +77,7 @@ public class RegistryNode extends ServiceNode {
    }
 
    public void addRequest(UUID requestId, String type) {
-      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0, 0, type);
+      ResultMetrics resultMetrics = new ResultMetrics(requestId, 0, 0, 0, 0, type);
       requests.put(requestId, resultMetrics);
    }
 

@@ -1,11 +1,9 @@
 package cs555.chiba.util;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -23,7 +21,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class Utilities {
 

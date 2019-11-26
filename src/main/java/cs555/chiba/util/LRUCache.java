@@ -3,6 +3,7 @@ package cs555.chiba.util;
 import cs555.chiba.service.Identity;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class LRUCache {
@@ -52,6 +53,7 @@ public class LRUCache {
 			if(!entry.valueList.containsKey(value) || entry.distance > distance)
 				updated = true;
 			entry.valueList.put(value, Math.min(distance, entry.distance));
+			entry.distance = Math.min(distance, entry.distance);
 			removeNode(entry);
 			addAtTop(entry);
 		} else {
@@ -120,7 +122,7 @@ public class LRUCache {
 			newnode.key = key;
 			newnode.keyName = device;
 			if (hashmap.size() > LRU_SIZE){
-				if(Math.random() < probability)
+				if(Math.random() > probability)
 					return false;
 				hashmap.remove(end.key);
 				removeNode(end);				
@@ -142,10 +144,12 @@ public class LRUCache {
 		return keyNames;
 	}
 	
-	public HashMap<Identity,String> getLocations(){
-		HashMap<Identity,String> locations = new HashMap<>();
-		for(Entry e : this.hashmap.values()) {
-			locations.put(e.value, e.keyName);
+	public synchronized Entry[] getLocations(){
+		Entry[] locations = new Entry[this.hashmap.size()];
+		int i = 0;
+		for(Map.Entry<UUID, Entry> e : this.hashmap.entrySet()) {
+			locations[i] = e.getValue();
+			i++;
 		}
 		return locations;
 	}
