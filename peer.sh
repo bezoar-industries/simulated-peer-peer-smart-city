@@ -15,4 +15,4 @@ LOGFILE=
 
 #java -Xdebug -Xrunjdwp:transport=dt_socket,address=12346,server=y,suspend=y -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer $REGISTRY $PORT 0
 
-java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer $REGISTRY $PORT 0
+java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer $REGISTRY $PORT 0 40

@@ -46,14 +46,14 @@ public class Peer extends ServiceNode {
    private HashMap<UUID, Metric> metrics;
    private List<IotDevice> connectedIotDevices;
 
-   public Peer(String registryHost, int registryPort, int numberOfIoTDevices) throws IOException {
+   public Peer(String registryHost, int registryPort, int numberOfIoTDevices, int cacheSize) throws IOException {
       super();
       this.registryId = Identity.builder().withHost(registryHost).withPort(registryPort).build();
       this.createIotNetwork(numberOfIoTDevices);
 
       this.queryIDCache = new LRUCache(40);
-      this.gossipCache = new LRUCache(40);
-      this.gossipEntries = new LRUCache(40);
+      this.gossipCache = new LRUCache(cacheSize);
+      this.gossipEntries = new LRUCache(cacheSize);
       this.metrics = new HashMap<>();
    }
 
@@ -114,16 +114,18 @@ public class Peer extends ServiceNode {
       nextFloodMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
       byte[] m = nextFloodMessage.getBytes();
 
-      if (queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - ignore it
-         queryIDCache.putEntry(e.getID(), e.getSenderID());
-
-         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
-
-         return;
+      synchronized(queryIDCache) {
+	      if (queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - ignore it
+	         queryIDCache.putEntry(e.getID(), e.getSenderID());
+	
+	         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+	
+	         return;
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
       metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
@@ -170,19 +172,21 @@ public class Peer extends ServiceNode {
 
       RandomWalk nextRWMesage = new RandomWalk(e.getID(), this.getIdentity(), e.getOriginatorId(), e.getTarget(), e.getCurrentHop() + 1, e.getHopLimit());
 
-      if (!queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - don't process it again (but still forward it)
-         //Check if queried data is here - if so, log appropriately
-         metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
-
-         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
-         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
-      } else {
-         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
-         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+      synchronized(queryIDCache) {
+	      if (!queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - don't process it again (but still forward it)
+	         //Check if queried data is here - if so, log appropriately
+	         metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
+	
+	         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
+	         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
+	      } else {
+	         nextRWMesage.setTotalDevicesChecked(e.getTotalDevicesChecked());
+	         nextRWMesage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
 
       byte[] m = nextRWMesage.getBytes();
 
@@ -226,17 +230,19 @@ public class Peer extends ServiceNode {
       nextGossipMessage.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric());
       byte[] m = nextGossipMessage.getBytes();
 
-      if (queryIDCache.containsEntry(e.getID())) {
-         //We've already processed this query - ignore it
-         queryIDCache.putEntry(e.getID(), e.getSenderID());
-
-         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
-
-         return;
+      synchronized(queryIDCache) {
+	      if (queryIDCache.containsEntry(e.getID())) {
+	         //We've already processed this query - ignore it
+	         queryIDCache.putEntry(e.getID(), e.getSenderID());
+	
+	         this.getTcpConnectionsCache().sendSingle(e.getOriginatorId(), m);
+	
+	         return;
+	      }
+	
+	      queryIDCache.putEntry(e.getID(), e.getSenderID());
       }
-
       logger.info("Received gossip query with ID: " + e.getID());
-      queryIDCache.putEntry(e.getID(), e.getSenderID());
       //Check if queried data is here - if so, log appropriately
       metrics.put(e.getID(), new Metric(this.calculateTotalDevicesWithMetric(e.getTarget()), e.getCurrentHop()));
 
@@ -245,6 +251,10 @@ public class Peer extends ServiceNode {
       nextGossipMessage2.setTotalDevicesChecked(e.getTotalDevicesChecked() + connectedIotDevices.size());
       nextGossipMessage2.setTotalDevicesWithMetric(e.getTotalDevicesWithMetric() + this.calculateTotalDevicesWithMetric(e.getTarget()));
       byte[] m2 = nextGossipMessage2.getBytes();
+      
+      nextGossipMessage.setTotalDevicesChecked(0);
+      nextGossipMessage.setTotalDevicesWithMetric(0);
+      m = nextGossipMessage.getBytes();
 
       int index = 0;
       if (e.getCurrentHop() + 1 < e.getHopLimit()) {
@@ -263,7 +273,7 @@ public class Peer extends ServiceNode {
 	         }
          } else if(e.getGossipType() == 1) {
         	 for(cs555.chiba.util.LRUCache.Entry entry : gossipEntries.getHashmap().values()) {
-        		 if(entry.keyName.contentEquals(e.getTarget())) {
+        		 if(entry.keyName.contentEquals(e.getTarget()) && entry.value != this.getIdentity()) {
                     if(index == 0) {
                        this.getTcpConnectionsCache().sendSingle(entry.value, m2);
                     } else {
@@ -382,14 +392,15 @@ public class Peer extends ServiceNode {
 
    private static Peer parseArguments(String[] args) throws IOException {
 
-      if (!Utilities.checkArgCount(3, args)) {
-         throw new IllegalArgumentException("Peer Node requires 3 arguments:  registry-host registry-port iot-count");
+      if (!Utilities.checkArgCount(4, args)) {
+         throw new IllegalArgumentException("Peer Node requires 3 arguments:  registry-host registry-port iot-count cache-size");
       }
 
       String registryHots = args[0];
       int registryPort = Utilities.parsePort(args[1]);
       int iotCount = Integer.parseInt(args[2]);
+      int cacheSize = Integer.parseInt(args[3]);
 
-      return new Peer(registryHots, registryPort, iotCount);
+      return new Peer(registryHots, registryPort, iotCount, cacheSize);
    }
 }
