@@ -16,7 +16,9 @@ public class AutomatedRegistryNode extends RegistryNode {
     public static void main(String[] args) {
         try {
             AutomatedRegistryNode node = parseArguments(args);
-            automatedStartup(node.getPort(), node, RegistryCommands.getRegistryCommands(node));
+            int minConnections = Utilities.parsePositiveIntFromArg("min-connections", args[1]);
+            int maxConnections = Utilities.parsePositiveIntFromArg("max-connections", args[2]);
+            automatedStartup(node.getPort(), node, RegistryCommands.getRegistryCommands(node), minConnections, maxConnections, args[3]);
         }
         catch (Exception e) {
             logger.log(Level.SEVERE, "Startup failed", e);
@@ -24,8 +26,8 @@ public class AutomatedRegistryNode extends RegistryNode {
     }
 
     private static AutomatedRegistryNode parseArguments(String[] args) {
-        if (!Utilities.checkArgCount(3, args)) {
-            throw new IllegalArgumentException("Automated Registry Node requires 3 arguments:  port-num min-connections max-connections");
+        if (!Utilities.checkArgCount(4, args)) {
+            throw new IllegalArgumentException("Automated Registry Node requires 3 arguments:  port-num min-connections max-connections output-filename");
         }
 
         int port = Utilities.parsePort(args[0]);

@@ -123,7 +123,7 @@ public abstract class ServiceNode {
       }
    }
 
-   private void automatedStartup(int port, Commands commands) {
+   private void automatedStartup(int port, Commands commands, int minConnections, int maxConnections, String filename) {
       try {
          myself = this;
          this.eventFactory = EventFactory.getInstance(this);
@@ -134,13 +134,24 @@ public abstract class ServiceNode {
          this.serverThread.start();
          specialStartUp();
          logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
+         int[] maxHops = new int[]{100,90,80,70,60,50,40,30,20,10,5};
+         String[] queryTypes = new String[]{"flood","gossiptype0","gossiptype1","randomwalk"};
          Thread.sleep(60000);
-	 parseCommand(commands, new String[]{"buildoverlay", "5", "10"});
+	     parseCommand(commands, new String[]{"buildoverlay", ""+minConnections, ""+maxConnections});
          parseCommand(commands, new String[]{"connectpeers"});
          Thread.sleep(10000);
-         parseCommand(commands, new String[]{"randomwalk", "AIR_QUALITY", "10"});
-         Thread.sleep(60000);
-         parseCommand(commands, new String[]{"export-results", "./results.csv"});
+         parseCommand(commands, new String[]{"flood", "AIR_QUALITY", "-1"});
+         Thread.sleep(20000);
+         for (int maxHop : maxHops) {
+            for(int i = 0; i < 20; i++) {
+               for (String type : queryTypes) {
+                  parseCommand(commands, new String[]{type, "AIR_QUALITY", "" + maxHop});
+                  Thread.sleep(3000);
+               }
+            }
+         }
+         Thread.sleep(120000);
+         parseCommand(commands, new String[]{"export-results", filename});
       }
       catch (InterruptedException e) {
          // We were told to shut down
@@ -182,9 +193,9 @@ public abstract class ServiceNode {
       node.startup(port, commands, prompt);
    }
 
-   protected static void automatedStartup(int port, ServiceNode node, Commands commands) {
+   protected static void automatedStartup(int port, ServiceNode node, Commands commands, int minConnections, int maxConnections, String filename) {
       addShutdownHook(node);
-      node.automatedStartup(port, commands);
+      node.automatedStartup(port, commands, minConnections, maxConnections, filename);
    }
 
    // Close everything nicely when ctl C or the exit command is sent.
