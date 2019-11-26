@@ -134,11 +134,12 @@ public abstract class ServiceNode {
          this.serverThread.start();
          specialStartUp();
          logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
-         parseCommand(commands, new String[]{"buildoverlay", "AIR_QUALITY", "10"});
+         Thread.sleep(60000);
+	 parseCommand(commands, new String[]{"buildoverlay", "5", "10"});
          parseCommand(commands, new String[]{"connectpeers"});
-         Thread.sleep(10);
+         Thread.sleep(10000);
          parseCommand(commands, new String[]{"randomwalk", "AIR_QUALITY", "10"});
-         Thread.sleep(60);
+         Thread.sleep(60000);
          parseCommand(commands, new String[]{"export-results", "./results.csv"});
       }
       catch (InterruptedException e) {
