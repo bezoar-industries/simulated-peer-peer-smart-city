@@ -123,6 +123,35 @@ public abstract class ServiceNode {
       }
    }
 
+   private void automatedStartup(int port, Commands commands) {
+      try {
+         myself = this;
+         this.eventFactory = EventFactory.getInstance(this);
+         this.connections = new TCPConnectionsCache();
+         this.server = new TCPServerThread(port, connections, eventFactory);
+         this.identity = Identity.builder().withHost(this.server.getAddr().getHostAddress()).withPort(this.server.getPort()).build();
+         this.serverThread = new Thread(this.server);
+         this.serverThread.start();
+         specialStartUp();
+         logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
+         parseCommand(commands, new String[]{"buildoverlay", "AIR_QUALITY", "10"});
+         parseCommand(commands, new String[]{"connectpeers"});
+         Thread.sleep(10);
+         parseCommand(commands, new String[]{"randomwalk", "AIR_QUALITY", "10"});
+         Thread.sleep(60);
+         parseCommand(commands, new String[]{"export-results", "./results.csv"});
+      }
+      catch (InterruptedException e) {
+         // We were told to shut down
+      }
+      catch (Exception e) {
+         logger.log(Level.SEVERE, "Something Terrible Happened!", e);
+      }
+      finally {
+         shutdown();
+      }
+   }
+
    /**
     * Execute the given command.
     */
@@ -150,6 +179,11 @@ public abstract class ServiceNode {
    protected static void startup(int port, ServiceNode node, Commands commands, String prompt) {
       addShutdownHook(node);
       node.startup(port, commands, prompt);
+   }
+
+   protected static void automatedStartup(int port, ServiceNode node, Commands commands) {
+      addShutdownHook(node);
+      node.automatedStartup(port, commands);
    }
 
    // Close everything nicely when ctl C or the exit command is sent.
