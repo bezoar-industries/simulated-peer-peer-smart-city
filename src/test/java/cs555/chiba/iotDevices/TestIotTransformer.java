@@ -12,7 +12,7 @@ import static org.junit.Assert.*;
 public class TestIotTransformer {
 
    @Test public void generateDeviceString() {
-      List<IotDevice> connectedIotDevices = IotFactory.generateRandomDevices(3, 30);
+      List<IotDevice> connectedIotDevices = IotFactory.generateRandomDevices(300, 3000);
       IotTransformer trans = new IotTransformer(connectedIotDevices);
       String devices = trans.getDeviceString();
       trans = new IotTransformer(devices);

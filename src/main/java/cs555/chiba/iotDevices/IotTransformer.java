@@ -26,7 +26,7 @@ public class IotTransformer {
          counts[iotDevice.getType().ordinal()]++;
       });
 
-      return Arrays.stream(counts).mapToObj(Integer::toString).collect(Collectors.joining(""));
+      return Arrays.stream(counts).mapToObj(Integer::toString).collect(Collectors.joining(":"));
    }
 
    public String getDeviceString() {
@@ -49,7 +49,7 @@ public class IotTransformer {
       List<IotDevice> devices = new ArrayList<>();
 
       if (!Utilities.isBlank(this.deviceString)) {
-         List<Integer> pieces = Arrays.stream(this.deviceString.split("")).map(Integer::parseInt).collect(Collectors.toList());
+         List<Integer> pieces = Arrays.stream(this.deviceString.split(":")).map(Integer::parseInt).collect(Collectors.toList());
 
          int size = Math.min(pieces.size(), IotType.values().length);
          for (int i = 0; i < size; i++) {
