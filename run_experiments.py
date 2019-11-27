@@ -35,7 +35,7 @@ if __name__=="__main__":
 			if current_num_hubs >= num_hubs:
 				break
 
-		filename = "./results/results_"+str(num_hubs)+"_"+str(connections[1])+"_"+str(cache_size)".csv"
+		filename = "./results/results_"+str(num_hubs)+"_"+str(connections[1])+"_"+str(cache_size)+".csv"
 		os.system("xterm -e 'ssh topeka \"cd CS555-final; sh automatedRegistry.sh "+str(connections[0])+" "+str(connections[1])+" "+filename+" \"' &")
 		time.sleep(40)
 		for assignment in assignments:
