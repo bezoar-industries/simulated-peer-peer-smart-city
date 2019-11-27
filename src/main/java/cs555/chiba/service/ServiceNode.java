@@ -136,21 +136,24 @@ public abstract class ServiceNode {
          logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
          int[] maxHops = new int[]{100,90,80,70,60,50,40,30,20,10,5};
          String[] queryTypes = new String[]{"flood","gossiptype0","gossiptype1","randomwalk"};
-         Thread.sleep(60000);
-	     parseCommand(commands, new String[]{"buildoverlay", ""+minConnections, ""+maxConnections});
+         synchronized(this) {
+	 this.wait(120000);
+	 logger.info("building overlay");
+	 parseCommand(commands, new String[]{"buildoverlay", ""+minConnections, ""+maxConnections});
          parseCommand(commands, new String[]{"connectpeers"});
-         Thread.sleep(10000);
+         this.wait(60000);
          parseCommand(commands, new String[]{"flood", "AIR_QUALITY", "-1"});
-         Thread.sleep(20000);
+         this.wait(20000);
          for (int maxHop : maxHops) {
-            for(int i = 0; i < 20; i++) {
+            for(int i = 0; i < 6; i++) {
                for (String type : queryTypes) {
                   parseCommand(commands, new String[]{type, "AIR_QUALITY", "" + maxHop});
-                  Thread.sleep(3000);
+                  this.wait(3000);
                }
             }
          }
-         Thread.sleep(120000);
+         this.wait(120000);
+	}
          parseCommand(commands, new String[]{"export-results", filename});
       }
       catch (InterruptedException e) {
