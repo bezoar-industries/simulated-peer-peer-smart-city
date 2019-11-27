@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import math
+import itertools
 from multiprocessing import Pool
 
 def getFreeMemory(machine):
@@ -12,8 +13,9 @@ if __name__=="__main__":
 	desired_num_hubs = [10000, 5000, 2500, 1000, 100,]
 	min_max_connections = [(2,4), (5,10), (10,15), (20,25)]
 	cache_sizes = [40, 100, 200, 400]
+	experiments = list(itertools.product(*(desired_num_hubs,min_max_connections,cache_sizes)))
 	
-	for num_hubs, connections, cache_size in zip(desired_num_hubs, min_max_connections, cache_sizes):
+	for num_hubs, connections, cache_size in experiments:
 		p = Pool(225)
 		with open(sys.argv[1], "r") as f:
 			machines = [m.strip() for m in f.readlines()]
