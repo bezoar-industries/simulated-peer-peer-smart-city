@@ -255,7 +255,7 @@ public class NetworkMap {
     * Random iot device string
     */
    private String generateIotDevices() {
-      List<IotDevice> connectedIotDevices = IotFactory.generateRandomDevices(3, 30);
+      List<IotDevice> connectedIotDevices = IotFactory.generateRandomDevices(3, 300);
       IotTransformer trans = new IotTransformer(connectedIotDevices);
       return trans.getDeviceString();
    }

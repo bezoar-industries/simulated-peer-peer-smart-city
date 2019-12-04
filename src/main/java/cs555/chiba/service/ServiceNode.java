@@ -134,26 +134,26 @@ public abstract class ServiceNode {
          this.serverThread.start();
          specialStartUp();
          logger.info("Starting up as [" + this.getIdentity().getIdentityKey() + "]");
-         int[] maxHops = new int[]{100,90,80,70,60,50,40,30,20,10,5};
+         int[] maxHops = new int[]{14,13,12,11,10,9,8,7,6,5,4};
          String[] queryTypes = new String[]{"flood","gossiptype0","gossiptype1","randomwalk"};
          synchronized(this) {
-	 this.wait(120000);
-	 logger.info("building overlay");
-	 parseCommand(commands, new String[]{"buildoverlay", ""+minConnections, ""+maxConnections});
-         parseCommand(commands, new String[]{"connectpeers"});
-         this.wait(60000);
-         parseCommand(commands, new String[]{"flood", "AIR_QUALITY", "-1"});
-         this.wait(20000);
-         for (int maxHop : maxHops) {
-            for(int i = 0; i < 6; i++) {
-               for (String type : queryTypes) {
-                  parseCommand(commands, new String[]{type, "AIR_QUALITY", "" + maxHop});
-                  this.wait(3000);
-               }
-            }
-         }
-         this.wait(120000);
-	}
+        	 this.wait(30000);
+			 logger.info("building overlay");
+			 parseCommand(commands, new String[]{"buildoverlay", ""+minConnections, ""+maxConnections});
+		     parseCommand(commands, new String[]{"connectpeers"});
+		     this.wait(30000);
+		     parseCommand(commands, new String[]{"flood", "AIR_QUALITY", "-1"});
+		     this.wait(20000);
+		     for (int maxHop : maxHops) {
+		        for(int i = 0; i < 6; i++) {
+		           for (String type : queryTypes) {
+		              parseCommand(commands, new String[]{type, "AIR_QUALITY", "" + maxHop});
+		              this.wait(500);
+		           }
+		        }
+	         }
+	         this.wait(5000);
+		 }
          parseCommand(commands, new String[]{"export-results", filename});
       }
       catch (InterruptedException e) {

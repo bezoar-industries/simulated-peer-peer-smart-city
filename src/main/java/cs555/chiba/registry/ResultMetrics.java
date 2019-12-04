@@ -10,12 +10,13 @@ public class ResultMetrics {
     private long totalNumberOfDevices;
     private long totalNumberOfDevicesWithMetric;
     private long maxHops;
+    private long hopLimit;
     private Date timeQueryStarted;
     private Date timeOfLastReceivedResultMessage;
     private String typeOfQuery;
 
     public ResultMetrics(UUID requestId, long totalNumberOfHops, long totalNumberOfDevices, long
-            totalNumberOfDevicesWithMetric, long maxHops, String typeOfQuery) {
+            totalNumberOfDevicesWithMetric, long maxHops, long hopLimit, String typeOfQuery) {
     	this.requestId = requestId;
         this.totalNumberOfHops = totalNumberOfHops;
         this.totalNumberOfDevices = totalNumberOfDevices;
@@ -23,14 +24,16 @@ public class ResultMetrics {
         this.totalNumberOfDevicesWithMetric = totalNumberOfDevicesWithMetric;
         this.maxHops = maxHops;
         this.typeOfQuery = typeOfQuery;
+        this.hopLimit = hopLimit;
     }
 
     public synchronized void addResult(int totalNumberOfHops, int totalNumberOfDevices, int
-            totalNumberOfDevicesWithMetric, int maxHops) {
+            totalNumberOfDevicesWithMetric, int maxHops, int hopLimit) {
         this.totalNumberOfHops += totalNumberOfHops;
         this.totalNumberOfDevices += totalNumberOfDevices;
         this.totalNumberOfDevicesWithMetric += totalNumberOfDevicesWithMetric;
         this.maxHops = Math.max(maxHops, this.maxHops);
+        this.hopLimit = hopLimit;
         this.timeOfLastReceivedResultMessage = new Date();
     }
 
@@ -65,6 +68,10 @@ public class ResultMetrics {
 	    
 	public long getMaxHops() {
 		return maxHops;
+	}
+	
+	public long getHopLimit() {
+		return hopLimit;
 	}
 	
 	public Date getTimeQueryStarted() {
