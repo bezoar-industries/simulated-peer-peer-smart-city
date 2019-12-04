@@ -49,7 +49,7 @@ class RegistryCommands {
 
       builder.registerCommand("flood", args -> {
          if (!Utilities.checkArgCount(2, args)) {
-            throw new IllegalArgumentException("Flooding requires 1 argument:  " + "metric-to-collect, hop-limit");
+            throw new IllegalArgumentException("Flooding requires 2 arguments:  " + "metric-to-collect, hop-limit");
          }
 
          sendFloodingRequest(args[0], Integer.parseInt(args[1]), registryNode);
@@ -58,7 +58,7 @@ class RegistryCommands {
 
       builder.registerCommand("gossiptype0", args -> {
          if (!Utilities.checkArgCount(2, args)) {
-            throw new IllegalArgumentException("Gossiping type 0 requires 1 argument:  " + "metric-to-collect, hop-limit");
+            throw new IllegalArgumentException("Gossiping type 0 requires 2 arguments:  " + "metric-to-collect, hop-limit");
          }
 
          sendGossipingRequest(args[0], Integer.parseInt(args[1]), registryNode, 0);
@@ -67,7 +67,7 @@ class RegistryCommands {
 
       builder.registerCommand("gossiptype1", args -> {
          if (!Utilities.checkArgCount(2, args)) {
-            throw new IllegalArgumentException("Gossiping type 1 requires 1 argument:  " + "metric-to-collect, hop-limit");
+            throw new IllegalArgumentException("Gossiping type 1 requires 2 arguments:  " + "metric-to-collect, hop-limit");
          }
 
          sendGossipingRequest(args[0], Integer.parseInt(args[1]), registryNode, 1);
