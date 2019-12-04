@@ -8,167 +8,262 @@
 </p>
 
 ## Environment
-* Install Java jdk 1.8+
-* Install Gradle 5+
-* Add the main directory to the classpath in .bashrc
-  * export CLASSPATH=".:./build/classes/java/main:./lib/*"
-  * source .bashrc
-* Untar java bundle or clone the repo
-* In the bundle build the project
-  * gradle assemble
+
+- Install Java jdk 1.8+
+- Install Gradle 5+
+- Add the main directory to the classpath in .bashrc
+  - export CLASSPATH=".:./build/classes/java/main:./lib/\*"
+  - source .bashrc
+- Untar java bundle or clone the repo
+- In the bundle build the project
+  - gradle assemble
 
 ## Simple Network
+
 To get started, create a small network of 1 registry and 3 peers.
 
-* Start the Registry
-  * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
-  * Example: java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode 60000
+- Start the Registry
 
-* Start a small network of 3 peers by running the below command in 3 different terminals.
-  * java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer REGISTRY PORT IOT_COUNT GOSSIP_CACHE_SIZE
-  * Example: java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer 192.168.100.2 60000 0 40
+  - java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
+  - Example: java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode 60000
 
-Now that all the peers are running, we need to build our network.  From the Registry issue these commands.
-* Generate our network with a min and max number of connections per peer
-  * Registry->buildoverlay 2 2
+- Start a small network of 3 peers by running the below command in 3 different terminals.
+  - java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=\$LOGFILE cs555.chiba.node.Peer REGISTRY PORT IOT_COUNT GOSSIP_CACHE_SIZE
+  - Example: java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=\$LOGFILE cs555.chiba.node.Peer 192.168.100.2 60000 0 40
 
-* Push the generated network to the peers.
-  * Registry->connectpeers
+Now that all the peers are running, we need to build our network. From the Registry issue these commands.
 
-* Export overlay to a file for future use
-  * Registry->exportoverlay savedoverlay.csv
+- Generate our network with a min and max number of connections per peer
+
+  - Registry->buildoverlay 2 2
+
+- Push the generated network to the peers.
+
+  - Registry->connectpeers
+
+- Export overlay to a file for future use
+  - Registry->exportoverlay savedoverlay.csv
 
 You're now ready to use your small network!
 
-* The Registry will tell all the peers to shut down when you are done.
-  * Registry->shutdown
+- The Registry will tell all the peers to shut down when you are done.
 
-* Individual peers can be shutdown as well
-  * Peer->exit
+  - Registry->shutdown
+
+- Individual peers can be shutdown as well
+  - Peer->exit
 
 ## Larger Networks
 
-To run networks of thousands of peers, it's not practical to start them up individually.  We've provided scripts to help.
-* Start your Registry as you did before.
-  * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
+To run networks of thousands of peers, it's not practical to start them up individually. We've provided scripts to help.
 
-* Launch a large number of peers on a machine with the lotsofpeers.sh script
-  * Edit the lotsofpeers.sh script with the IP and Port of your Registry
-  * Run lotsofpeers.sh
-    * lotsofpeers.sh NUMBER_OF_PEERS GOSSIP_CACHE_SIZE
-    * Example: lotsofpeers.sh 100 40
+- Start your Registry as you did before.
 
-* To launch peers on multiple machines, use the startupNoShell.sh script
-  * startupNoShell.sh TEXT_FILE_OF_MACHINES
-  * Example: startupNoShell.sh workers.txt
+  - java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
 
-* To shut them down use the Registry Shutdown command
-  * Registry->shutdown
-* To ensure they all turn off, use the shutdown script
-  * shutdown.sh workers.txt
-* If something went wrong, use the angry shutdown script
-  * angryshutdown.sh workers.txt
+- Launch a large number of peers on a machine with the lotsofpeers.sh script
 
+  - Edit the lotsofpeers.sh script with the IP and Port of your Registry
+  - Run lotsofpeers.sh
+    - lotsofpeers.sh NUMBER_OF_PEERS GOSSIP_CACHE_SIZE
+    - Example: lotsofpeers.sh 100 40
+
+- To launch peers on multiple machines, use the startupNoShell.sh script
+
+  - startupNoShell.sh TEXT_FILE_OF_MACHINES
+  - Example: startupNoShell.sh workers.txt
+
+- To shut them down use the Registry Shutdown command
+  - Registry->shutdown
+- To ensure they all turn off, use the shutdown script
+  - shutdown.sh workers.txt
+- If something went wrong, use the angry shutdown script
+  - angryshutdown.sh workers.txt
 
 ## Running a Search
-TODO
+
+To kick off a search, from the Registry, run one of the following command:
+
+- Registry->flood METRIC_TO_SEARCH_FOR HOP_LIMIT
+- Registry->randomWalk METRIC_TO_SEARCH_FOR HOP_LIMIT
+- Registry->gossip0 METRIC_TO_SEARCH_FOR HOP_LIMIT (distance-based algorithm)
+- Registry->gossip1 METRIC_TO_SEARCH_FOR HOP_LIMIT (location-based algorithm)
+
+Current metrics supported on simulated devices:
+
+- POWER_CONSUMPTION
+- POWER_STATE
+- AIR_QUALITY
+- TEMPERATURE
+- THROTTLE_STATE
+- BATTERY_PERCENTAGE
+- CURRENT_TIME
+- TIME_SINCE_LAST_SYNC
+- LOCK_STATE
+- INSIDE_TEMPERATURE
+- OPEN_STATE
+- CURRENT_CYCLE_STEP
+- LIGHT_STATUS
+- HOUSE_POWER_STATUS
+- FRIDGE_TEMPERATURE
+- FREEZER_TEMPERATURE
+- ICE_LEVEL
+- RECORD_HIGH
+- RECORD_LOW
+- SET_TEMPERATURE
+- TIME_TO_NEXT_TERMPERATURE_CHANGE
+- CPU_USAGE
+- MEMORY_USAGE
+- NETFLIX
+- AMAZON_PRIME
+- HEART_RATE
+- CURRENT_LEAK
 
 ## Performance Data
-TODO
+
+To access the results:
+
+- Registry->print-results
+
+This will print an array of results for each query executed from the registry. Results will include:
+
+- Total number of hops
+- Total number of devices queried
+- Total number of queried devices that had the metric
+- Max number of hops for this query
+- Start time of the query
+- Time of most recent query
+- Type of query
+
+To remove the previous results:
+
+- Registry->clear-results
+
+To export all previous results:
+
+- Registry->export-results PATH_TO_EXPORTED_FILE
 
 ## Registry Commands
 
 ### help
+
 List available commands
 
 ### exit
+
 Shutdown this node
 
 ### name
+
 What is the identity of this node
 
 ### listconnections
-List all nodes with active connections to this node.  This includes everything connected to the peer.
+
+List all nodes with active connections to this node. This includes everything connected to the peer.
 
 ### listpeers
+
 List all the registered peers.
 
 ### randomWalk \<metric> \<hop limit>
+
 Initiate a random walk experiment.
 
 ### flood \<metric> \<hop limit>
+
 Initiate a flood experiment.
 
 ### gossiptype0 \<metric> \<hop limit>
+
 Initiate a Gossip experiment using distance.
 
 ### gossiptype1 \<metric> \<hop limit>
+
 Initiate a Gossip experiment using cached types.
 
 ### buildoverlay \<min> \<max>
+
 Build a random overlay with min and maximum number of connections.
 
-Note, the overlay builder will attempt to create graphs until it succeeds to create one based on the perscribed min/max connections per peer.  If you are overly strict, this could take a long time.
+Note, the overlay builder will attempt to create graphs until it succeeds to create one based on the perscribed min/max connections per peer. If you are overly strict, this could take a long time.
 
 ### exportoverlay \<file.csv>
+
 Export the overlay to a file.
 
 ### importoverlay \<file.csv>
+
 Read in an overlay using the currently registered peers for the vertices.
 
 ### connectpeers
+
 Connect all the peers in the manner prescribed by the overlay.
 
 ### shutdown
+
 Tell all the peers to shutdown and close their sockets.
 
 ### print-results
+
 Print the results to the terminal.
-      
+
 ### export-results \<file.csv>
+
 Write results to a file.
 
 ### clear-results
+
 Clear the results to start a new experiment.
-      
+
 ### checkpeers
+
 Verify the peers are connected as described in the overlay.
 
 ### exportgephi \<file.csv>
+
 Export the overlay into the gephi format for visualizations.
 
 ## Peer Commands
 
 ### help
+
 List available commands.
 
 ### exit
+
 Shutdown this node.
 
 ### name
+
 Print the identity of this node.
 
 ### listconnections
-List all nodes with active connections to this node.  This includes everything connected to the peer.
+
+List all nodes with active connections to this node. This includes everything connected to the peer.
 
 ### listpeers
-List all neighboring peers.  These are the connections the search algorithms can see and use.  The Registry and other support style connections will be excluded.
+
+List all neighboring peers. These are the connections the search algorithms can see and use. The Registry and other support style connections will be excluded.
 
 ### listdevices
+
 List the IOT devices on this peer.
-      
+
 ### gossipdata
+
 List the cached gossip distance entries on this peer.
 
 ### gossipentries
+
 List the cached gossip entry locations on this peer.
 
 ### querymetrics
+
 List the gathered metrics on this peer.
 
 ## Logging
 
-Logging works with the basic Java Logging Platform.  Levels can be configured in cs555.chiba.service.LogConfig.
+Logging works with the basic Java Logging Platform. Levels can be configured in cs555.chiba.service.LogConfig.
 
 The log file is specified during startup of the nodes like so:
 
@@ -182,12 +277,4 @@ For peers:
 
 java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=logs/csuPeer.log cs555.chiba.node.Peer 192.168.100.2 60000 0 40
 
-To avoid interleaving peer data, the config will detect the word 'peer' in the log file name.  If it finds 'peer' it will append the startup time to the filename.  This will give each peer their own log.
-
-
-
-
-
-
-
-
+To avoid interleaving peer data, the config will detect the word 'peer' in the log file name. If it finds 'peer' it will append the startup time to the filename. This will give each peer their own log.
