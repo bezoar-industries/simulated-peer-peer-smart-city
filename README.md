@@ -93,25 +93,27 @@ List all nodes with active connections to this node.  This includes everything c
 ### listpeers
 List all the registered peers.
 
-### randomWalk
+### randomWalk <metric> <hop limit>
 Initiate a random walk experiment.
 
-### flood
+### flood <metric> <hop limit>
 Initiate a flood experiment.
 
-### gossiptype0
+### gossiptype0 <metric> <hop limit>
 Initiate a Gossip experiment using distance.
 
-### gossiptype1
+### gossiptype1 <metric> <hop limit>
 Initiate a Gossip experiment using cached types.
 
-### buildoverlay
+### buildoverlay <min> <max>
 Build a random overlay with min and maximum number of connections.
 
-### exportoverlay
+Note, the overlay builder will attempt to create graphs until it succeeds to create one based on the perscribed min/max connections per peer.  If you are overly strict, this could take a long time.
+
+### exportoverlay <file.csv>
 Export the overlay to a file.
 
-### importoverlay
+### importoverlay <file.csv>
 Read in an overlay using the currently registered peers for the vertices.
 
 ### connectpeers
@@ -123,7 +125,7 @@ Tell all the peers to shutdown and close their sockets.
 ### print-results
 Print the results to the terminal.
       
-### export-results
+### export-results <file.csv>
 Write results to a file.
 
 ### clear-results
@@ -132,7 +134,7 @@ Clear the results to start a new experiment.
 ### checkpeers
 Verify the peers are connected as described in the overlay.
 
-### exportgephi
+### exportgephi <file.csv>
 Export the overlay into the gephi format for visualizations.
 
 ## Peer Commands
