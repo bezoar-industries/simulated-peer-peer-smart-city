@@ -232,7 +232,7 @@ class RegistryCommands {
 	      StringBuilder out = new StringBuilder("Exporting Results: \n");
 	      try {
 	    	  FileWriter f = new FileWriter(exportPath);
-	    	  f.write("ID,Total Hops,Total Devices,Devices with Metric,Max Hops,Time Start,Time End,Type\n");
+	    	  f.write("ID,Total Hops,Total Devices,Devices with Metric,Max Hops,Hop Limit,Time Start,Time End,Type\n");
 	    	  for(ResultMetrics m : results.values()) {
 		    	  StringBuilder line = new StringBuilder("");
 		    	  line.append(m.getRequestId().toString()).append(",");
@@ -240,6 +240,7 @@ class RegistryCommands {
 		    	  line.append(m.getTotalNumberOfDevices()).append(",");
 		    	  line.append(m.getTotalNumberOfDevicesWithMetric()).append(",");
 		    	  line.append(m.getMaxHops()).append(",");
+		    	  line.append(m.getHopLimit()).append(",");
 		    	  line.append(m.getTimeQueryStarted()).append(",");
 		    	  line.append(m.getTimeOfLastReceivedResultMessage()).append(",");
 		    	  line.append(m.getTypeOfQuery()).append("\n");
