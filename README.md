@@ -165,7 +165,22 @@ List the cached gossip entry locations on this peer.
 List the gathered metrics on this peer.
 
 ## Logging
-TODO
+
+Logging works with the basic Java Logging Platform.  Levels can be configured in cs555.chiba.service.LogConfig.
+
+The log file is specified during startup of the nodes like so:
+
+java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=logs/csuServer.log cs555.chiba.registry.RegistryNode 60000
+
+The system will not create any subdirectories, so you will need to create the 'logs' directory in the above example.
+
+The server will use the same log file every time you start up a Registry.
+
+For peers:
+
+java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=logs/csuPeer.log cs555.chiba.node.Peer 192.168.100.2 60000 0 40
+
+To avoid interleaving peer data, the config will detect the word 'peer' in the log file name.  If it finds 'peer' it will append the startup time to the filename.  This will give each peer their own log.
 
 
 
