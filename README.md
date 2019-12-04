@@ -11,63 +11,63 @@
 * Install Java jdk 1.8+
 * Install Gradle 5+
 * Add the main directory to the classpath in .bashrc
-* * export CLASSPATH=".:./build/classes/java/main:./lib/*"
-* * source .bashrc
+  * export CLASSPATH=".:./build/classes/java/main:./lib/*"
+  * source .bashrc
 * Untar java bundle or clone the repo
 * In the bundle build the project
-* * gradle assemble
+  * gradle assemble
 
 ## Simple Network
 To get started, create a small network of 1 registry and 3 peers.
 
 * Start the Registry
-* * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
-* * Example: java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode 60000
+  * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
+  * Example: java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode 60000
 
 * Start a small network of 3 peers by running the below command in 3 different terminals.
-* * java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer REGISTRY PORT IOT_COUNT GOSSIP_CACHE_SIZE
-* * Example: java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer 192.168.100.2 60000 0 40
+  * java -Xmx5M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer REGISTRY PORT IOT_COUNT GOSSIP_CACHE_SIZE
+  * Example: java -Xmx20M -Djava.util.logging.config.class=cs555.chiba.service.LogConfig -Dcsu.log.file=$LOGFILE cs555.chiba.node.Peer 192.168.100.2 60000 0 40
 
 Now that all the peers are running, we need to build our network.  From the Registry issue these commands.
 * Generate our network with a min and max number of connections per peer
-* * Registry->buildoverlay 2 2
+  * Registry->buildoverlay 2 2
 
 * Push the generated network to the peers.
-* * Registry->connectpeers
+  * Registry->connectpeers
 
 * Export overlay to a file for future use
-* * Registry->exportoverlay savedoverlay.csv
+  * Registry->exportoverlay savedoverlay.csv
 
 You're now ready to use your small network!
 
 * The Registry will tell all the peers to shut down when you are done.
-* * Registry->shutdown
+  * Registry->shutdown
 
 * Individual peers can be shutdown as well
-* * Peer->exit
+  * Peer->exit
 
 ## Larger Networks
 
 To run networks of thousands of peers, it's not practical to start them up individually.  We've provided scripts to help.
 * Start your Registry as you did before.
-* * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
+  * java -Djava.util.logging.config.class=cs555.chiba.service.LogConfig cs555.chiba.registry.RegistryNode PORT
 
 * Launch a large number of peers on a machine with the lotsofpeers.sh script
-* * Edit the lotsofpeers.sh script with the IP and Port of your Registry
-* * Run lotsofpeers.sh
-* * * lotsofpeers.sh NUMBER_OF_PEERS GOSSIP_CACHE_SIZE
-* * * Example: lotsofpeers.sh 100 40
+  * Edit the lotsofpeers.sh script with the IP and Port of your Registry
+  * Run lotsofpeers.sh
+    * lotsofpeers.sh NUMBER_OF_PEERS GOSSIP_CACHE_SIZE
+    * Example: lotsofpeers.sh 100 40
 
 * To launch peers on multiple machines, use the startupNoShell.sh script
-* * startupNoShell.sh TEXT_FILE_OF_MACHINES
-* * Example: startupNoShell.sh workers.txt
+  * startupNoShell.sh TEXT_FILE_OF_MACHINES
+  * Example: startupNoShell.sh workers.txt
 
 * To shut them down use the Registry Shutdown command
-* * Registry->shutdown
+  * Registry->shutdown
 * To ensure they all turn off, use the shutdown script
-* * shutdown.sh workers.txt
+  * shutdown.sh workers.txt
 * If something went wrong, use the angry shutdown script
-* * angryshutdown.sh workers.txt
+  * angryshutdown.sh workers.txt
 
 
 ## Running a Search
